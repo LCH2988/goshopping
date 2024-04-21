@@ -1,47 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LIFF Example</title>
+  <title>福利補給站</title>
+    <style type="text/css">
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      height: 100%;
+    }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: none;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+  </style>
 </head>
 <body>
-  <button onclick="openExternalLink()">Open External Link</button>
-  <button onclick="getUserProfile()">Get User Profile</button>
+<iframe src= "https://script.google.com/macros/s/AKfycbzEXRvSvAhUFSEy7wKasnQjPMXiudfLK-DpjxI_-kjO9Sy0tTYa0eiRK7CiP7mgvcklVQ/exec" frameborder="0" marginheight="0" marginwidth="0"
+width="100%" height="100%" scrolling="auto">
+</iframe>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script>
-    window.onload = function() {
-      // 初始化 LIFF
-      liff.init({ liffId: '2000939040-m1Bbg7LB' })
-        .then(() => {
-          // 在初始化成功後執行的代碼
-          console.log('LIFF initialized');
-        })
-        .catch((error) => {
-          // 在初始化失敗時執行的代碼
-          console.error('LIFF initialization failed', error);
-        });
-    };
-
-    // 打開外部連結
-    function openExternalLink() {
-      liff.openWindow({
-        url: 'https://www.example.com',
-        external: true
-      });
-    }
-
-    // 獲取用戶資訊
-    function getUserProfile() {
-      liff.getProfile()
-        .then(profile => {
-          alert(`User Profile: ${JSON.stringify(profile)}`);
-        })
-        .catch((error) => {
-          console.error('Error getting user profile', error);
-        });
-    }
-  </script>
 </body>
+
 </html>
