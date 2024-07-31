@@ -1,0 +1,528 @@
+  <!DOCTYPE html>
+  <html lang="zh-TW">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>整合式抽獎系統</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        color: #333;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+      }
+
+      h1,
+      h2 {
+        color: #333;
+        text-align: center;
+      }
+
+      select,
+      input,
+      textarea,
+      button {
+        display: block;
+        width: 100%;
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+
+      button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+
+      .nav {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 20px;
+      }
+
+      .nav button {
+        background-color: #333;
+        color: white;
+      }
+
+      .section {
+        display: none;
+      }
+
+      .section.active {
+        display: block;
+      }
+
+      #draw-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+      }
+
+      #slot-machine {
+        width: 150px;
+        height: 100px;
+        background-color: #333;
+        border-radius: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      }
+
+      .slot {
+        width: 100px;
+        height: 60px;
+        background-color: #fff;
+        border-radius: 5px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .slot-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        transition: top 5s cubic-bezier(0.25, 0.1, 0.25, 1);
+      }
+
+      .slot-item {
+        width: 100%;
+        height: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      #lever {
+        width: 20px;
+        height: 60px;
+        background-color: #ff4d4d;
+        border-radius: 10px;
+        margin-left: 10px;
+        cursor: pointer;
+        position: relative;
+      }
+
+      #lever::after {
+        content: '';
+        position: absolute;
+        width: 15px;
+        height: 15px;
+        background-color: #ffcc00;
+        border-radius: 50%;
+        top: 5px;
+        left: 2.5px;
+        transition: top 0.3s;
+      }
+
+      #lever.pulled::after {
+        top: 40px;
+      }
+
+      #winnerDisplay {
+        margin-top: 20px;
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+      }
+
+      #winnerList {
+        margin-top: 20px;
+      }
+
+      .prize-image {
+        max-width: 200px;
+        max-height: 200px;
+        object-fit: cover;
+      }
+
+      #prizeImage {
+        max-width: 400px;
+        max-height: 400px;
+        object-fit: cover;
+        display: block;
+        margin: 10px auto;
+      }
+
+      #drawInfo {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-top: 20px;
+      }
+
+      #prizeDetails {
+        flex: 1;
+        margin-left: 20px;
+        margin-right: 20px;
+      }
+
+      #participantTextarea {
+        width: 200px;
+        height: 200px;
+        resize: vertical;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>整合式抽獎系統</h1>
+      <div class="nav">
+        <button onclick="showSection('prize-management')">獎品與參與者管理</button>
+        <button onclick="showSection('draw-system')">抽獎系統與中獎名單</button>
+      </div>
+
+      <div id="prize-management" class="section">
+        <h2>獎品與參與者管理</h2>
+        <form id="prizeForm">
+          <input type="text" id="prizeName" placeholder="獎品名稱" required>
+          <textarea id="prizeDescription" placeholder="獎品描述"></textarea>
+          <input type="number" id="prizeQuantity" placeholder="獎品數量" required>
+          <input type="number" id="prizeValue" placeholder="獎品價值" step="0.01" required>
+          <input type="url" id="prizeImageUrl" placeholder="獎品照片網址">
+          <textarea id="participantList" placeholder="輸入參與者名單，每行一個名字"></textarea>
+          <button type="submit">新增獎品與參與者</button>
+        </form>
+        <table>
+          <thead>
+            <tr>
+              <th>名稱</th>
+              <th>描述</th>
+              <th>數量</th>
+              <th>價值</th>
+              <th>照片</th>
+              <th>參與者數量</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="prizeTableBody"></tbody>
+        </table>
+      </div>
+
+      <div id="draw-system" class="section">
+        <h2>抽獎系統與中獎名單</h2>
+        <div id="drawInfo">
+            <img id="prizeImage" src="" alt="獎品照片" style="display: none;">
+            
+            
+          </div>
+        <div id="draw-container">
+          <div id="slot-machine">
+            <div class="slot" id="slot1">
+              <div class="slot-container"></div>
+            </div>
+            <div id="lever"></div>
+          </div>
+          <textarea id="participantTextarea" readonly></textarea>
+          <div id="prizeDetails"></div>          
+        </div>
+        <div id="winnerDisplay"></div>
+        <select id="drawPrizeSelect"></select>
+        <button id="startDrawBtn">開始抽獎</button>
+        
+
+        <div id="winnerList">
+          <h3>中獎名單</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>獎品名稱</th>
+                <th>獲獎者</th>
+              </tr>
+            </thead>
+            <tbody id="winnerTableBody"></tbody>
+          </table>         
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 全局變量
+      let prizes = JSON.parse(localStorage.getItem('prizes')) || [];
+      let winners = JSON.parse(localStorage.getItem('winners')) || [];
+
+      const ITEM_HEIGHT = 60; // 更新高度
+      const TOTAL_SPINS = 50;
+
+      function showSection(sectionId) {
+        document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+        if (sectionId === 'prize-management') {
+          updatePrizeTable();
+        }
+        if (sectionId === 'draw-system') {
+          updateDrawPrizeSelect();
+          updateDrawInfo();
+          updateWinnerTable();
+        }
+      }
+
+      function updatePrizeTable() {
+        const prizeTableBody = document.getElementById('prizeTableBody');
+        prizeTableBody.innerHTML = '';
+        prizes.forEach((prize, index) => {
+          const row = prizeTableBody.insertRow();
+          row.innerHTML = `
+            <td>${prize.name}</td>
+            <td>${prize.description}</td>
+            <td>${prize.quantity}</td>
+            <td>${prize.value}</td>
+            <td><img src="${prize.imageUrl}" alt="${prize.name}" class="prize-image"></td>
+            <td>${prize.participants.length}</td>
+            <td>
+              <button onclick="viewParticipants(${index})">查看參與者</button>
+              <button onclick="deletePrize(${index})">刪除</button>
+            </td>
+          `;
+        });
+      }
+
+      function deletePrize(index) {
+        prizes.splice(index, 1);
+        localStorage.setItem('prizes', JSON.stringify(prizes));
+        updatePrizeTable();
+        updateDrawPrizeSelect(); // 更新下拉清單
+      }
+
+      function viewParticipants(index) {
+        const prize = prizes[index];
+        alert(`${prize.name} 的參與者：\n${prize.participants.join('\n')}`);
+      }
+
+      function updateDrawPrizeSelect() {
+        const drawPrizeSelect = document.getElementById('drawPrizeSelect');
+        drawPrizeSelect.innerHTML = '<option value="">選擇獎品</option>';
+        prizes.forEach((prize, index) => {
+          const remainingParticipants = prize.participants.length;
+          const remainingQuantity = prize.quantity - (winners.filter(w => w.prizeIndex === index).length);
+          if (remainingParticipants > 0 && remainingQuantity > 0) {
+            drawPrizeSelect.innerHTML += `<option value="${index}">${prize.name} (剩餘: ${remainingQuantity})</option>`;
+          }
+        });
+      }
+
+      function updateDrawInfo() {
+        const selectedPrizeIndex = document.getElementById('drawPrizeSelect').value;
+        const prizeImage = document.getElementById('prizeImage');
+        const prizeDetails = document.getElementById('prizeDetails');
+        const participantTextarea = document.getElementById('participantTextarea');
+
+        if (selectedPrizeIndex === "") {
+          prizeDetails.textContent = "";
+          prizeImage.style.display = 'none';
+          participantTextarea.value = '';
+          return;
+        }
+
+        const prize = prizes[selectedPrizeIndex];
+        const remainingQuantity = prize.quantity - (winners.filter(w => w.prizeIndex === parseInt(selectedPrizeIndex)).length);
+        prizeDetails.innerHTML = `
+          <h3>獎品資訊</h3>
+          <p><strong>獎品名稱:</strong> ${prize.name}</p>
+          <p><strong>描述:</strong> ${prize.description}</p>
+          <p><strong>剩餘數量:</strong> ${remainingQuantity}</p>
+          <p><strong>參與者數量:</strong> ${prize.participants.length}</p>
+        `;
+
+        if (prize.imageUrl) {
+          prizeImage.src = prize.imageUrl;
+          prizeImage.style.display = 'block';
+        } else {
+          prizeImage.style.display = 'none';
+        }
+
+        participantTextarea.value = prize.participants.join(', ');
+      }
+
+      function setupSlotMachine() {
+        const selectedPrizeIndex = document.getElementById('drawPrizeSelect').value;
+        if (selectedPrizeIndex === "") {
+          return;
+        }
+        const prize = prizes[selectedPrizeIndex];
+        const container = document.querySelector('#slot1 .slot-container');
+        container.innerHTML = '';
+        prize.participants.forEach(name => {
+          const item = document.createElement('div');
+          item.className = 'slot-item';
+          item.innerText = name;
+          container.appendChild(item);
+        });
+        container.style.top = '0px';
+      }
+
+      function spinSlotMachine() {
+        const selectedPrizeIndex = document.getElementById('drawPrizeSelect').value;
+        if (selectedPrizeIndex === "") {
+          alert("請先選擇一個獎品");
+          return;
+        }
+        const prize = prizes[selectedPrizeIndex];
+        if (prize.participants.length === 0) {
+          alert("這個獎品沒有參與者");
+          return;
+        }
+
+        const lever = document.getElementById('lever');
+        lever.classList.add('pulled');
+        const winnerIndex = Math.floor(Math.random() * prize.participants.length);
+        const winner = prize.participants[winnerIndex];
+
+        spinSlot(winnerIndex);
+
+        setTimeout(() => {
+          document.getElementById('winnerDisplay').textContent = `恭喜獲獎者：${winner}`;
+          lever.classList.remove('pulled');
+
+          winners.push({ prizeIndex: parseInt(selectedPrizeIndex), name: winner });
+          localStorage.setItem('winners', JSON.stringify(winners));
+
+          prize.participants.splice(winnerIndex, 1);
+          localStorage.setItem('prizes', JSON.stringify(prizes));
+
+          updateDrawInfo();
+          updateDrawPrizeSelect();
+          setupSlotMachine();
+          updateWinnerTable();
+        }, 5000);
+      }
+
+      function spinSlot(winnerIndex) {
+        const container = document.querySelector('#slot1 .slot-container');
+        const totalHeight = container.scrollHeight;
+        let currentPosition = 0;
+        let spins = 0;
+
+        function spin() {
+          if (spins < TOTAL_SPINS) {
+            currentPosition -= ITEM_HEIGHT;
+            if (currentPosition <= -totalHeight) {
+              currentPosition = 0;
+            }
+            container.style.transition = `top 0.05s linear`;
+            container.style.top = `${currentPosition}px`;
+            spins++;
+            requestAnimationFrame(spin);
+          } else {
+            container.style.transition = `top 1s ease-out`;
+            container.style.top = `${-winnerIndex * ITEM_HEIGHT}px`;
+          }
+        }
+        requestAnimationFrame(spin);
+      }
+
+      function updateWinnerTable() {
+        const winnerTableBody = document.getElementById('winnerTableBody');
+        winnerTableBody.innerHTML = '';
+        winners.forEach(winner => {
+          const prize = prizes[winner.prizeIndex];
+          const row = winnerTableBody.insertRow();
+          row.innerHTML = `
+            <td>${prize.name}</td>
+            <td>${winner.name}</td>
+          `;
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        // 確保從 localStorage 載入獎品資料
+        prizes = JSON.parse(localStorage.getItem('prizes')) || [];
+        winners = JSON.parse(localStorage.getItem('winners')) || [];
+
+        // 更新獎品表格和下拉清單
+        updatePrizeTable();
+        updateDrawPrizeSelect();
+
+        document.getElementById('prizeForm').addEventListener('submit', function(e) {
+          e.preventDefault();
+          const newPrize = {
+            name: document.getElementById('prizeName').value,
+            description: document.getElementById('prizeDescription').value,
+            quantity: parseInt(document.getElementById('prizeQuantity').value),
+            value: parseFloat(document.getElementById('prizeValue').value),
+            imageUrl: document.getElementById('prizeImageUrl').value,
+            participants: document.getElementById('participantList').value.split('\n').filter(name => name.trim() !== '')
+          };
+          prizes.push(newPrize);
+          localStorage.setItem('prizes', JSON.stringify(prizes));
+          updatePrizeTable();
+          updateDrawPrizeSelect(); // 確保在新增獎品後更新下拉清單
+          this.reset();
+          console.log('新增獎品成功：', newPrize.name);
+        });
+
+        document.getElementById('drawPrizeSelect').addEventListener('change', function() {
+          updateDrawInfo();
+          setupSlotMachine();
+        });
+
+        document.getElementById('startDrawBtn').addEventListener('click', spinSlotMachine);
+
+        document.getElementById('exportBtn').addEventListener('click', function() {
+          let csvContent = "data:text/csv;charset=utf-8,獎品名稱,獲獎者\n";
+          winners.forEach(winner => {
+            const prize = prizes[winner.prizeIndex];
+            csvContent += `${prize.name},${winner.name}\n`;
+          });
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement("a");
+          link.setAttribute("href", encodedUri);
+          link.setAttribute("download", "winners.csv");
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+
+        // 初始化頁面
+        showSection('prize-management');
+      });
+    </script>
+  </body>
+
+  </html>
