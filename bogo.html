@@ -16,6 +16,7 @@
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
         }
         .table th {
             background-color: #f8f9fa;
@@ -93,7 +94,7 @@
     <script>
         const CONFIG = {
             LIFF_ID: '1657285806-2bmkYWkN',
-            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbxhMmrHJJ2qzARCk-qZ5STEJsO4-_C7Qk33PUM9AfH8Z6kAH3BKGQij4Bv8R-5CPDdU/exec'
+            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbysYQ2nWOiCNw_HKByuvMEJFSvg3l62q7UQTNHR38FBQ7UIKu2K6pER6-4QhPuqKLhn/exec'
         };
 
         let userData = null;
@@ -166,7 +167,14 @@
         async function loadData() {
             showLoading();
             try {
-                const response = await fetch(`${CONFIG.GAS_API_URL}?action=getData`);
+                const response = await fetch(`${CONFIG.GAS_API_URL}?action=getData`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -190,6 +198,7 @@
             try {
                 const response = await fetch(CONFIG.GAS_API_URL, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json',
                     },
