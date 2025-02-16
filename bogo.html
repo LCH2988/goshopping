@@ -52,14 +52,6 @@
             color: #666;
             margin-top: 5px;
         }
-        .error-message {
-            color: #dc3545;
-            margin: 10px 0;
-            padding: 10px;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-radius: 4px;
-        }
     </style>
 </head>
 <body>
@@ -104,25 +96,10 @@
     <script>
         const CONFIG = {
             LIFF_ID: '1657285806-2bmkYWkN',
-            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbxoZhsA8rJIlEBAi6TI3kaAh6GroUhloZ4t3wQuHABeSkOL9dpa3SbWl1qNWS94s0Z2/exec'
+            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbyi2oFH0V31gT3ZL5AkUr1ZAYJuaXoi7Lu2Z8WB9S3Zq9LrfZAoDE7MkDoz_1XlUhDk/exec'
         };
 
         let userData = null;
-
-        async function fetchWithRetry(url, options, maxRetries = 3) {
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    console.log(`Attempt ${i + 1} - Fetching:`, url);
-                    const response = await fetch(url, options);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return response;
-                } catch (error) {
-                    console.error(`Attempt ${i + 1} failed:`, error);
-                    if (i === maxRetries - 1) throw error;
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-                }
-            }
-        }
 
         async function initializeLiff() {
             try {
@@ -133,7 +110,7 @@
                 }
                 userData = await liff.getProfile();
                 displayUserInfo();
-                await loadData();
+                loadData();
             } catch (error) {
                 console.error('LIFF 初始化錯誤:', error);
                 showError('LIFF 初始化失敗: ' + error.message);
@@ -156,51 +133,60 @@
         }
 
         function showError(message) {
+            console.error('錯誤:', message);
             const errorContainer = document.getElementById('errorContainer');
             errorContainer.innerHTML = `
-                <div class="error-message">
-                    <strong>錯誤：</strong> ${message}
-                    <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             `;
         }
 
-        async function loadData() {
+        function loadData() {
             showLoading();
-            try {
-                const url = `${CONFIG.GAS_API_URL}?action=getData&t=${new Date().getTime()}`;
-                console.log('Loading data from:', url);
-
-                const response = await fetchWithRetry(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
+            const xhr = new XMLHttpRequest();
+            const url = `${CONFIG.GAS_API_URL}?action=getData&t=${new Date().getTime()}`;
+            
+            xhr.open('GET', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            
+            xhr.onload = function() {
+                try {
+                    if (xhr.status === 200) {
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.success) {
+                            displayData(result.data);
+                        } else {
+                            throw new Error(result.error || '資料載入失敗');
+                        }
+                    } else {
+                        throw new Error('請求失敗: ' + xhr.status);
                     }
-                });
-
-                const result = await response.json();
-                console.log('Received data:', result);
-
-                if (!result.success) {
-                    throw new Error(result.error || '資料載入失敗');
+                } catch (error) {
+                    console.error('處理資料錯誤:', error);
+                    showError(`載入資料失敗: ${error.message}`);
+                    const tableBody = document.getElementById('tableBody');
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <div class="text-danger mb-2">載入失敗</div>
+                                <button onclick="loadData()" class="btn btn-sm btn-primary">重新載入</button>
+                            </td>
+                        </tr>
+                    `;
+                } finally {
+                    hideLoading();
                 }
+            };
 
-                displayData(result.data);
-            } catch (error) {
-                console.error('載入資料錯誤:', error);
-                showError(`載入資料失敗: ${error.message}`);
-                const tableBody = document.getElementById('tableBody');
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="text-center">
-                            <div class="text-danger mb-2">載入失敗</div>
-                            <button onclick="loadData()" class="btn btn-sm btn-primary">重新載入</button>
-                        </td>
-                    </tr>
-                `;
-            } finally {
+            xhr.onerror = function() {
+                console.error('網路請求錯誤');
+                showError('網路連線失敗，請檢查網路狀態');
                 hideLoading();
-            }
+            };
+
+            xhr.send();
         }
 
         function displayData(data) {
@@ -237,39 +223,51 @@
             }).join('');
         }
 
-        async function confirmItem(index) {
+        function confirmItem(index) {
             if (!userData) {
                 showError('請先登入');
                 return;
             }
 
             showLoading();
-            try {
-                const response = await fetchWithRetry(CONFIG.GAS_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'confirmItem',
-                        index: index,
-                        userId: userData.userId,
-                        displayName: userData.displayName
-                    })
-                });
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', CONFIG.GAS_API_URL, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
 
-                const result = await response.json();
-                if (!result.success) {
-                    throw new Error(result.error || '確認失敗');
+            xhr.onload = function() {
+                try {
+                    if (xhr.status === 200) {
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.success) {
+                            loadData();
+                        } else {
+                            throw new Error(result.error || '確認失敗');
+                        }
+                    } else {
+                        throw new Error('請求失敗: ' + xhr.status);
+                    }
+                } catch (error) {
+                    console.error('確認錯誤:', error);
+                    showError('確認失敗: ' + error.message);
+                } finally {
+                    hideLoading();
                 }
+            };
 
-                await loadData();
-            } catch (error) {
-                console.error('確認錯誤:', error);
-                showError('確認失敗: ' + error.message);
-            } finally {
+            xhr.onerror = function() {
+                console.error('網路請求錯誤');
+                showError('網路連線失敗，請檢查網路狀態');
                 hideLoading();
-            }
+            };
+
+            const data = JSON.stringify({
+                action: 'confirmItem',
+                index: index,
+                userId: userData.userId,
+                displayName: userData.displayName
+            });
+
+            xhr.send(data);
         }
 
         function showLoading() {
