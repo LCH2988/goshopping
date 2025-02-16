@@ -29,6 +29,7 @@
 
         .confirm-btn {
             min-width: 80px;
+            margin: 2px;
         }
 
         .confirmed {
@@ -55,6 +56,23 @@
             background-color: #fff;
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn-group-vertical {
+            width: 120px;
+        }
+
+        .item-details {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+
+        .confirmation-info {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
         }
     </style>
 </head>
@@ -90,10 +108,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // 配置
         const CONFIG = {
             LIFF_ID: '1657285806-2bmkYWkN',
-            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbwvgW8Ck-quwZjYq7mKoz2jZXTevwSgwRIWjsZP-1hZBWK7Vi0FCXwHtFCpEioo5BPQ/exec' // 替換為您的 GAS Web App URL
+            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbxq8-bjH_6zFREWMf2NSFHcjw647YH5aM9dgFZBhh9j-NcEvW1h-EhszyQd_Vr97ljk/exec'
         };
 
         let userName = '';
@@ -147,18 +164,50 @@
             data.forEach((row, index) => {
                 const card = document.createElement('div');
                 card.className = 'card mb-2';
+
+                // 獲取確認資訊
+                const confirmedBy = row[8] || '';
+                const confirmedTime = row[9] ? new Date(row[9]).toLocaleString() : '';
+
                 card.innerHTML = `
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
+                        <div class="d-flex justify-content-between">
+                            <div class="item-details">
                                 <h5 class="card-title mb-1">${row[0]}</h5>
-                                <p class="card-text mb-0">${row[2]}</p>
+                                <p class="card-text mb-0">
+                                    <small class="text-muted">A欄: ${row[0] || '-'}</small><br>
+                                    <small class="text-muted">B欄: ${row[1] || '-'}</small><br>
+                                    <small class="text-muted">C欄: ${row[2] || '-'}</small>
+                                </p>
+                                ${confirmedBy ? `
+                                <div class="confirmation-info">
+                                    最後確認者: ${confirmedBy}<br>
+                                    確認時間: ${confirmedTime}
+                                </div>
+                                ` : ''}
                             </div>
-                            <button class="btn ${row[6] === "✓" ? 'btn-secondary confirmed' : 'btn-primary'} confirm-btn"
-                                    ${row[6] === "✓" ? 'disabled' : ''}
-                                    onclick="confirmItem(${index})">
-                                ${row[6] === "✓" ? '已確認' : '確認'}
-                            </button>
+                            <div class="btn-group-vertical">
+                                <button class="btn ${row[1] ? 'btn-secondary confirmed' : 'btn-primary'} confirm-btn" 
+                                        ${row[1] ? 'disabled' : ''} 
+                                        onclick="confirmItem(${index}, 'B')">
+                                    B ${row[1] ? '✓' : '確認'}
+                                </button>
+                                <button class="btn ${row[2] ? 'btn-secondary confirmed' : 'btn-primary'} confirm-btn"
+                                        ${row[2] ? 'disabled' : ''} 
+                                        onclick="confirmItem(${index}, 'C')">
+                                    C ${row[2] ? '✓' : '確認'}
+                                </button>
+                                <button class="btn ${row[6] ? 'btn-secondary confirmed' : 'btn-primary'} confirm-btn"
+                                        ${row[6] ? 'disabled' : ''} 
+                                        onclick="confirmItem(${index}, 'G')">
+                                    G ${row[6] ? '✓' : '確認'}
+                                </button>
+                                <button class="btn ${row[7] ? 'btn-secondary confirmed' : 'btn-primary'} confirm-btn"
+                                        ${row[7] ? 'disabled' : ''} 
+                                        onclick="confirmItem(${index}, 'H')">
+                                    H ${row[7] ? '✓' : '確認'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -166,8 +215,8 @@
             });
         }
 
-        async function confirmItem(index) {
-            if (!confirm('確定要確認此項目嗎？')) return;
+        async function confirmItem(index, column) {
+            if (!confirm(`確定要確認 ${column} 欄位嗎？`)) return;
             
             showLoading();
             try {
@@ -178,7 +227,8 @@
                     },
                     body: JSON.stringify({
                         rowIndex: index,
-                        userName: userName
+                        userName: userName,
+                        column: column
                     })
                 });
                 const result = await response.json();
