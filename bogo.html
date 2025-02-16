@@ -23,13 +23,9 @@
             top: 0;
             z-index: 1;
         }
-        .check-mark {
-            color: #198754;
-            font-weight: bold;
-        }
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
+        .content-cell {
+            min-width: 120px;
+            text-align: center;
         }
         .loading {
             position: fixed;
@@ -50,15 +46,10 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .table td {
-            vertical-align: middle;
-        }
-        .status-cell {
-            text-align: center;
-            min-width: 80px;
-        }
-        .info-cell {
-            min-width: 150px;
+        .confirm-status {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -72,20 +63,17 @@
             <table class="table table-bordered table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>項目名稱</th>
-                        <th class="status-cell">B欄</th>
-                        <th class="status-cell">C欄</th>
-                        <th class="status-cell">G欄</th>
-                        <th class="status-cell">H欄</th>
-                        <th class="info-cell">確認人</th>
-                        <th class="info-cell">確認時間</th>
-                        <th class="info-cell">變更者</th>
-                        <th class="info-cell">變更時間</th>
+                        <th class="content-cell">B欄</th>
+                        <th class="content-cell">C欄</th>
+                        <th class="content-cell">G欄</th>
+                        <th class="content-cell">H欄</th>
+                        <th class="content-cell">確認狀態</th>
+                        <th class="content-cell">操作</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="9" class="text-center">
+                        <td colspan="6" class="text-center">
                             <div class="spinner-border" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
@@ -105,7 +93,7 @@
     <script>
         const CONFIG = {
             LIFF_ID: '1657285806-2bmkYWkN',
-            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbyh7ePYyYm7Nj1WwHGF4VXHfJDmPpbmtplKAesF52_ZasuhVjJrmfWUINkgxE-1ur1u/exec'
+            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbxhMmrHJJ2qzARCk-qZ5STEJsO4-_C7Qk33PUM9AfH8Z6kAH3BKGQij4Bv8R-5CPDdU/exec'
         };
 
         let userData = null;
@@ -144,51 +132,32 @@
         function displayData(data) {
             const tableBody = document.getElementById('tableBody');
             if (!data || data.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="9" class="text-center">沒有待確認的項目</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center">沒有待確認的項目</td></tr>';
                 return;
             }
 
             tableBody.innerHTML = data.map((row, index) => {
-                const bConfirmed = row[1] === "✓";
-                const cConfirmed = row[2] === "✓";
-                const gConfirmed = row[6] === "✓";
-                const hConfirmed = row[7] === "✓";
                 const confirmedBy = row[8] || '-';
                 const confirmedTime = row[9] ? new Date(row[9]).toLocaleString() : '-';
-                const modifiedBy = row[10] || '-';
-                const modifiedTime = row[11] ? new Date(row[11]).toLocaleString() : '-';
+                const isConfirmed = confirmedBy !== '-';
 
                 return `
                     <tr>
-                        <td>${row[0]}</td>
-                        <td class="status-cell">
-                            ${bConfirmed ? 
-                                '<span class="check-mark">✓</span>' : 
-                                `<button class="btn btn-sm btn-primary" onclick="confirmItem(${index}, 'B')">確認</button>`
-                            }
+                        <td class="content-cell">${row[1] || '-'}</td>
+                        <td class="content-cell">${row[2] || '-'}</td>
+                        <td class="content-cell">${row[6] || '-'}</td>
+                        <td class="content-cell">${row[7] || '-'}</td>
+                        <td class="content-cell">
+                            <div>確認人: ${confirmedBy}</div>
+                            <div class="confirm-status">確認時間: ${confirmedTime}</div>
                         </td>
-                        <td class="status-cell">
-                            ${cConfirmed ? 
-                                '<span class="check-mark">✓</span>' : 
-                                `<button class="btn btn-sm btn-primary" onclick="confirmItem(${index}, 'C')">確認</button>`
-                            }
+                        <td class="content-cell">
+                            <button class="btn btn-primary" 
+                                    onclick="confirmItem(${index})"
+                                    ${isConfirmed ? 'disabled' : ''}>
+                                ${isConfirmed ? '已確認' : '確認'}
+                            </button>
                         </td>
-                        <td class="status-cell">
-                            ${gConfirmed ? 
-                                '<span class="check-mark">✓</span>' : 
-                                `<button class="btn btn-sm btn-primary" onclick="confirmItem(${index}, 'G')">確認</button>`
-                            }
-                        </td>
-                        <td class="status-cell">
-                            ${hConfirmed ? 
-                                '<span class="check-mark">✓</span>' : 
-                                `<button class="btn btn-sm btn-primary" onclick="confirmItem(${index}, 'H')">確認</button>`
-                            }
-                        </td>
-                        <td class="info-cell">${confirmedBy}</td>
-                        <td class="info-cell">${confirmedTime}</td>
-                        <td class="info-cell">${modifiedBy}</td>
-                        <td class="info-cell">${modifiedTime}</td>
                     </tr>
                 `;
             }).join('');
@@ -211,7 +180,7 @@
             }
         }
 
-        async function confirmItem(index, column) {
+        async function confirmItem(index) {
             if (!userData) {
                 showError('請先登入');
                 return;
@@ -227,7 +196,6 @@
                     body: JSON.stringify({
                         action: 'confirmItem',
                         index: index,
-                        column: column,
                         userId: userData.userId,
                         displayName: userData.displayName
                     })
