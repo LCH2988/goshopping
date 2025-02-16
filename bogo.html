@@ -52,6 +52,14 @@
             color: #666;
             margin-top: 5px;
         }
+        .error-message {
+            color: #dc3545;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -59,6 +67,8 @@
         <div class="user-info" id="userInfo">
             <h4>載入中...</h4>
         </div>
+        
+        <div id="errorContainer"></div>
         
         <div class="table-responsive">
             <table class="table table-bordered table-hover mb-0">
@@ -94,10 +104,25 @@
     <script>
         const CONFIG = {
             LIFF_ID: '1657285806-2bmkYWkN',
-            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbysYQ2nWOiCNw_HKByuvMEJFSvg3l62q7UQTNHR38FBQ7UIKu2K6pER6-4QhPuqKLhn/exec'
+            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbxoZhsA8rJIlEBAi6TI3kaAh6GroUhloZ4t3wQuHABeSkOL9dpa3SbWl1qNWS94s0Z2/exec'
         };
 
         let userData = null;
+
+        async function fetchWithRetry(url, options, maxRetries = 3) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    console.log(`Attempt ${i + 1} - Fetching:`, url);
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response;
+                } catch (error) {
+                    console.error(`Attempt ${i + 1} failed:`, error);
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+                }
+            }
+        }
 
         async function initializeLiff() {
             try {
@@ -127,6 +152,54 @@
                         </div>
                     </div>
                 `;
+            }
+        }
+
+        function showError(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <strong>錯誤：</strong> ${message}
+                    <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+                </div>
+            `;
+        }
+
+        async function loadData() {
+            showLoading();
+            try {
+                const url = `${CONFIG.GAS_API_URL}?action=getData&t=${new Date().getTime()}`;
+                console.log('Loading data from:', url);
+
+                const response = await fetchWithRetry(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                console.log('Received data:', result);
+
+                if (!result.success) {
+                    throw new Error(result.error || '資料載入失敗');
+                }
+
+                displayData(result.data);
+            } catch (error) {
+                console.error('載入資料錯誤:', error);
+                showError(`載入資料失敗: ${error.message}`);
+                const tableBody = document.getElementById('tableBody');
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            <div class="text-danger mb-2">載入失敗</div>
+                            <button onclick="loadData()" class="btn btn-sm btn-primary">重新載入</button>
+                        </td>
+                    </tr>
+                `;
+            } finally {
+                hideLoading();
             }
         }
 
@@ -164,30 +237,6 @@
             }).join('');
         }
 
-        async function loadData() {
-            showLoading();
-            try {
-                const response = await fetch(`${CONFIG.GAS_API_URL}?action=getData`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                displayData(data);
-            } catch (error) {
-                console.error('載入資料錯誤:', error);
-                showError('載入資料失敗: ' + error.message);
-            } finally {
-                hideLoading();
-            }
-        }
-
         async function confirmItem(index) {
             if (!userData) {
                 showError('請先登入');
@@ -196,11 +245,10 @@
 
             showLoading();
             try {
-                const response = await fetch(CONFIG.GAS_API_URL, {
+                const response = await fetchWithRetry(CONFIG.GAS_API_URL, {
                     method: 'POST',
-                    mode: 'cors',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         action: 'confirmItem',
@@ -210,16 +258,12 @@
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
                 const result = await response.json();
-                if (result.success) {
-                    await loadData();
-                } else {
+                if (!result.success) {
                     throw new Error(result.error || '確認失敗');
                 }
+
+                await loadData();
             } catch (error) {
                 console.error('確認錯誤:', error);
                 showError('確認失敗: ' + error.message);
@@ -234,10 +278,6 @@
 
         function hideLoading() {
             document.getElementById('loading').style.display = 'none';
-        }
-
-        function showError(message) {
-            alert(message);
         }
 
         window.onload = initializeLiff;
