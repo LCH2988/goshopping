@@ -10,38 +10,27 @@
     <style>
         body {
             background-color: #f8f9fa;
-            padding-top: 20px;
-        }
-
-        .container {
-            max-width: 800px;
-        }
-
-        .card {
-            border: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 10px;
-        }
-
-        .card-header {
-            background-color: #f8f9fa;
-            font-weight: bold;
-        }
-
-        .card-body {
             padding: 20px;
         }
-
-        .confirm-btn {
-            min-width: 80px;
-            margin: 2px;
+        .table-responsive {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        .confirmed {
-            background-color: #6c757d !important;
-            border-color: #6c757d !important;
+        .table th {
+            background-color: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
-
+        .check-mark {
+            color: #198754;
+            font-weight: bold;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
         .loading {
             position: fixed;
             top: 0;
@@ -54,49 +43,22 @@
             align-items: center;
             z-index: 1000;
         }
-
         .user-info {
             margin-bottom: 20px;
             padding: 10px;
-            background-color: #fff;
-            border-radius: 5px;
+            background-color: white;
+            border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        .btn-group-vertical {
-            width: 100%;
+        .table td {
+            vertical-align: middle;
         }
-
-        .status-item {
-            border-radius: 4px;
-            margin-bottom: 5px;
-            padding: 8px;
+        .status-cell {
+            text-align: center;
+            min-width: 80px;
         }
-
-        .bg-success {
-            color: white !important;
-        }
-
-        .confirmation-status {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-
-        .status-grid {
-            margin-top: 15px;
-        }
-
-        .btn-success:disabled {
-            opacity: 0.8;
-            cursor: not-allowed;
-        }
-
-        @media (max-width: 768px) {
-            .btn-group-vertical {
-                margin-top: 15px;
-            }
+        .info-cell {
+            min-width: 150px;
         }
     </style>
 </head>
@@ -106,21 +68,31 @@
             <h4>載入中...</h4>
         </div>
         
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        確認清單
-                    </div>
-                    <div class="card-body" id="content">
-                        <div class="text-center">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>項目名稱</th>
+                        <th class="status-cell">B欄</th>
+                        <th class="status-cell">C欄</th>
+                        <th class="status-cell">G欄</th>
+                        <th class="status-cell">H欄</th>
+                        <th class="info-cell">確認人</th>
+                        <th class="info-cell">確認時間</th>
+                        <th class="info-cell">變更者</th>
+                        <th class="info-cell">變更時間</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="9" class="text-center">
                             <div class="spinner-border" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -132,8 +104,8 @@
 
     <script>
         const CONFIG = {
-            LIFF_ID: '1657285806-2bmkYWkN',  // 請替換成您的 LIFF ID
-            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbzOHlEt1uXwT59P-c8WIrunObqpHz2u-Y9ySHhdPG_qq8MMDnvectWTnr4o3Q5U8eFr/exec'  // 請替換成您的 GAS 部署網址
+            LIFF_ID: '1657285806-2bmkYWkN',
+            GAS_API_URL: 'https://script.google.com/macros/s/AKfycbyh7ePYyYm7Nj1WwHGF4VXHfJDmPpbmtplKAesF52_ZasuhVjJrmfWUINkgxE-1ur1u/exec'
         };
 
         let userData = null;
@@ -169,6 +141,59 @@
             }
         }
 
+        function displayData(data) {
+            const tableBody = document.getElementById('tableBody');
+            if (!data || data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="9" class="text-center">沒有待確認的項目</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = data.map((row, index) => {
+                const bConfirmed = row[1] === "✓";
+                const cConfirmed = row[2] === "✓";
+                const gConfirmed = row[6] === "✓";
+                const hConfirmed = row[7] === "✓";
+                const confirmedBy = row[8] || '-';
+                const confirmedTime = row[9] ? new Date(row[9]).toLocaleString() : '-';
+                const modifiedBy = row[10] || '-';
+                const modifiedTime = row[11] ? new Date(row[11]).toLocaleString() : '-';
+
+                return `
+                    <tr>
+                        <td>${row[0]}</td>
+                        <td class="status-cell">
+                            ${bConfirmed ? 
+                                '<span class="check-mark">✓</span>' : 
+                                `<button class="btn btn-sm btn-primary" onclick="confirmItem(${index}, 'B')">確認</button>`
+                            }
+                        </td>
+                        <td class="status-cell">
+                            ${cConfirmed ? 
+                                '<span class="check-mark">✓</span>' : 
+                                `<button class="btn btn-sm btn-primary" onclick="confirmItem(${index}, 'C')">確認</button>`
+                            }
+                        </td>
+                        <td class="status-cell">
+                            ${gConfirmed ? 
+                                '<span class="check-mark">✓</span>' : 
+                                `<button class="btn btn-sm btn-primary" onclick="confirmItem(${index}, 'G')">確認</button>`
+                            }
+                        </td>
+                        <td class="status-cell">
+                            ${hConfirmed ? 
+                                '<span class="check-mark">✓</span>' : 
+                                `<button class="btn btn-sm btn-primary" onclick="confirmItem(${index}, 'H')">確認</button>`
+                            }
+                        </td>
+                        <td class="info-cell">${confirmedBy}</td>
+                        <td class="info-cell">${confirmedTime}</td>
+                        <td class="info-cell">${modifiedBy}</td>
+                        <td class="info-cell">${modifiedTime}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         async function loadData() {
             showLoading();
             try {
@@ -184,97 +209,6 @@
             } finally {
                 hideLoading();
             }
-        }
-
-        function displayData(data) {
-            const content = document.getElementById('content');
-            if (!data || data.length === 0) {
-                content.innerHTML = '<div class="text-center">沒有待確認的項目</div>';
-                return;
-            }
-
-            content.innerHTML = '';
-            data.forEach((row, index) => {
-                const card = document.createElement('div');
-                card.className = 'card mb-3';
-
-                const confirmedBy = row[8] || '尚未確認';
-                const confirmedTime = row[9] ? new Date(row[9]).toLocaleString() : '尚未確認';
-
-                const bConfirmed = row[1] === "✓";
-                const cConfirmed = row[2] === "✓";
-                const gConfirmed = row[6] === "✓";
-                const hConfirmed = row[7] === "✓";
-
-                card.innerHTML = `
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h5 class="card-title">${row[0]}</h5>
-                                <div class="confirmation-status mb-2">
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <strong>確認人:</strong> ${confirmedBy}
-                                        </div>
-                                        <div class="col-6">
-                                            <strong>確認時間:</strong> ${confirmedTime}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="status-grid">
-                                    <div class="row g-2">
-                                        <div class="col-6">
-                                            <div class="status-item ${bConfirmed ? 'bg-success' : 'bg-light'} p-2 rounded">
-                                                <strong>B欄:</strong> ${bConfirmed ? '已確認 ✓' : '待確認'}
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="status-item ${cConfirmed ? 'bg-success' : 'bg-light'} p-2 rounded">
-                                                <strong>C欄:</strong> ${cConfirmed ? '已確認 ✓' : '待確認'}
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="status-item ${gConfirmed ? 'bg-success' : 'bg-light'} p-2 rounded">
-                                                <strong>G欄:</strong> ${gConfirmed ? '已確認 ✓' : '待確認'}
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="status-item ${hConfirmed ? 'bg-success' : 'bg-light'} p-2 rounded">
-                                                <strong>H欄:</strong> ${hConfirmed ? '已確認 ✓' : '待確認'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="btn-group-vertical">
-                                    <button class="btn ${bConfirmed ? 'btn-success' : 'btn-primary'} mb-2" 
-                                            ${bConfirmed ? 'disabled' : ''} 
-                                            onclick="confirmItem(${index}, 'B')">
-                                        B欄 ${bConfirmed ? '✓' : '確認'}
-                                    </button>
-                                    <button class="btn ${cConfirmed ? 'btn-success' : 'btn-primary'} mb-2"
-                                            ${cConfirmed ? 'disabled' : ''} 
-                                            onclick="confirmItem(${index}, 'C')">
-                                        C欄 ${cConfirmed ? '✓' : '確認'}
-                                    </button>
-                                    <button class="btn ${gConfirmed ? 'btn-success' : 'btn-primary'} mb-2"
-                                            ${gConfirmed ? 'disabled' : ''} 
-                                            onclick="confirmItem(${index}, 'G')">
-                                        G欄 ${gConfirmed ? '✓' : '確認'}
-                                    </button>
-                                    <button class="btn ${hConfirmed ? 'btn-success' : 'btn-primary'}"
-                                            ${hConfirmed ? 'disabled' : ''} 
-                                            onclick="confirmItem(${index}, 'H')">
-                                        H欄 ${hConfirmed ? '✓' : '確認'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                content.appendChild(card);
-            });
         }
 
         async function confirmItem(index, column) {
