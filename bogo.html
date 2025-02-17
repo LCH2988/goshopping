@@ -1,436 +1,435 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <base target="_top">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>搶購名單管理系統</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        background-color: #f8f9fa;
-      }
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>搶購名單管理系統</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #333;
+      margin: 0;
+      padding: 20px 0;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .filter-label {
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #495057;
+    }
+    .filter-select {
+      padding: 8px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      background-color: white;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: white;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #4CAF50;
+      color: white;
+      position: sticky;
+      top: 0;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    tr.confirmed {
+      background-color: #d4edda !important;
+    }
+    tr.modified {
+      background-color: #cce5ff !important;
+    }
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 0 4px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .btn-confirm {
+      background-color: #28a745;
+      color: white;
+    }
+    .btn-edit {
+      background-color: #007bff;
+      color: white;
+    }
+    .btn-save {
+      background-color: #ffc107;
+      color: black;
+    }
+    .loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+    .input-field {
+      padding: 6px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .table-container {
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    @media (max-width: 768px) {
       .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 15px;
+        padding: 10px;
       }
-      .filter-section {
-        margin-bottom: 20px;
-        padding: 20px;
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        background-color: white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border-radius: 8px;
-        overflow: hidden;
+      .filters {
+        grid-template-columns: 1fr;
+        gap: 10px;
       }
       th, td {
-        padding: 12px;
-        border: 1px solid #dee2e6;
-        text-align: left;
-      }
-      th {
-        background-color: #4CAF50;
-        color: white;
-        font-weight: bold;
-      }
-      tr:nth-child(even) {
-        background-color: #f8f9fa;
+        padding: 8px;
+        font-size: 14px;
       }
       .btn {
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        margin: 0 5px;
-        font-weight: 500;
-        transition: all 0.3s ease;
+        padding: 6px 12px;
+        font-size: 14px;
+        margin: 2px;
       }
-      .btn:hover {
-        opacity: 0.9;
-      }
-      .confirm-btn {
-        background-color: #28a745;
-        color: white;
-      }
-      .edit-btn {
-        background-color: #007bff;
-        color: white;
-      }
-      .save-btn {
-        background-color: #ffc107;
-        color: black;
-      }
-      .filter-select {
-        padding: 8px;
-        margin: 0 10px;
-        min-width: 150px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-      }
-      .confirmed {
-        background-color: #d4edda !important;
-      }
-      .modified {
-        background-color: #cce5ff !important;
-      }
-      #loading {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.9);
-        display: none;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-      }
-      .loading-text {
-        font-size: 1.2em;
-        color: #4CAF50;
-        font-weight: bold;
-      }
-      .header {
-        margin-bottom: 30px;
-        text-align: center;
-      }
-      .header h1 {
-        color: #2c3e50;
-        margin-bottom: 10px;
-      }
-      .filter-group {
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        margin-bottom: 10px;
-      }
-      .filter-label {
-        min-width: 60px;
-      }
-      
-      @media screen and (max-width: 768px) {
-        .filter-section {
-          padding: 15px;
-        }
-        .filter-group {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 10px;
-        }
-        .filter-select {
-          width: 100%;
-          margin: 5px 0;
-        }
-        .btn {
-          width: 100%;
-          margin: 5px 0;
-        }
-        th, td {
-          padding: 8px;
-          font-size: 14px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="loading">
-      <div class="loading-text">載入中...</div>
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">
+    <div>載入中...</div>
+  </div>
+  
+  <div class="container">
+    <div class="header">
+      <h1>搶購名單管理系統</h1>
     </div>
 
-    <div class="container">
-      <div class="header">
-        <h1>搶購名單管理系統</h1>
+    <div class="filters">
+      <div class="filter-group">
+        <label class="filter-label">買手</label>
+        <select class="filter-select" id="buyerFilter" onchange="applyFilters()">
+          <option value="">全部</option>
+        </select>
       </div>
-      
-      <div class="filter-section">
-        <h3>篩選條件</h3>
-        <div class="filter-group">
-          <div class="filter-label">買手：</div>
-          <select id="buyerFilter" class="filter-select" onchange="applyFilters()">
-            <option value="">全部</option>
-          </select>
-        </div>
-        
-        <div class="filter-group">
-          <div class="filter-label">帳號：</div>
-          <select id="accountFilter" class="filter-select" onchange="applyFilters()">
-            <option value="">全部</option>
-          </select>
-        </div>
-        
-        <div class="filter-group">
-          <div class="filter-label">組別：</div>
-          <select id="groupFilter" class="filter-select" onchange="applyFilters()">
-            <option value="">全部</option>
-          </select>
-        </div>
+      <div class="filter-group">
+        <label class="filter-label">帳號</label>
+        <select class="filter-select" id="accountFilter" onchange="applyFilters()">
+          <option value="">全部</option>
+        </select>
       </div>
-
-      <div id="dataTable"></div>
+      <div class="filter-group">
+        <label class="filter-label">組別</label>
+        <select class="filter-select" id="groupFilter" onchange="applyFilters()">
+          <option value="">全部</option>
+        </select>
+      </div>
     </div>
 
-    <script>
-      const CONFIG = {
-        LIFF_ID: '1657285806-2bmkYWkN',
-        GAS_API_URL: 'https://script.google.com/macros/s/AKfycbyBigEcZpFQ4xesMo6zJUjfs6fn6ttDRWJcr4ZnLOmdiuaxPj5Wk6PSMSIemQlV-aBhig/exec',
-        MAX_RETRIES: 3,
-        RETRY_DELAY: 1000
-      };
+    <div class="table-container" id="dataTable"></div>
+  </div>
 
-      let dataStatus = {};
-      let lineUserId = '';
-      let originalData = [];
+  <script>
+    // 設定
+    const config = {
+      SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbx1Z6m_9gOEivDzqfjBcKQK3tB036ez2VZonOagTOQxfIRjHLcm9wVqsPfyXzl_CK-h/exec',
+      LIFF_ID: '1657285806-2bmkYWkN'
+    };
 
-      async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
-        try {
-          return await fetch(url, options);
-        } catch (err) {
-          if (retries > 0) {
-            await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
-            return fetchWithRetry(url, options, retries - 1);
-          }
-          throw err;
+    let userData = null;
+    let allData = [];
+
+    // 初始化 LIFF
+    async function initializeLiff() {
+      try {
+        await liff.init({ liffId: config.LIFF_ID });
+        if (!liff.isLoggedIn()) {
+          liff.login();
+        } else {
+          const profile = await liff.getProfile();
+          userData = profile;
+          loadData();
         }
+      } catch (err) {
+        console.error('LIFF initialization failed', err);
+        alert('初始化失敗，請重新整理頁面');
       }
+    }
 
-      async function fetchGAS(action, data = {}) {
-        try {
-          const url = `${CONFIG.GAS_API_URL}?action=${action}`;
-          document.getElementById('loading').style.display = 'flex';
-          
-          const options = {
-            method: 'POST',
-            mode: 'cors',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({ 
-              ...data, 
-              lineUserId,
-              timestamp: new Date().getTime()
-            }),
-          };
-
-          const response = await fetchWithRetry(url, options);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          
-          const result = await response.json();
-          if (result.error) {
-            throw new Error(result.error);
-          }
-          return result;
-          
-        } catch (err) {
-          console.error('API 呼叫失敗:', err);
-          alert(`操作失敗：${err.message || '請稍後再試'}`);
-          throw err;
-        } finally {
-          document.getElementById('loading').style.display = 'none';
-        }
-      }
-
-      async function initializeLiff() {
-        try {
-          await liff.init({ liffId: CONFIG.LIFF_ID });
-          if (!liff.isLoggedIn()) {
-            liff.login();
-          } else {
-            const profile = await liff.getProfile();
-            lineUserId = profile.userId;
-            await loadData();
-          }
-        } catch (err) {
-          console.error('LIFF 初始化失敗:', err);
-          alert('LIFF 初始化失敗，請重新整理頁面');
-        }
-      }
-
-      async function loadData() {
-        try {
-          document.getElementById('loading').style.display = 'flex';
-          const result = await fetchGAS('getData');
-          originalData = result.data;
+    // 載入資料
+    async function loadData() {
+      showLoading(true);
+      try {
+        const response = await fetch(`${config.SCRIPT_URL}?action=getData`);
+        const result = await response.json();
+        
+        if (result.success) {
+          allData = result.data;
+          updateFilterOptions(result.data);
           displayData(result.data);
-          updateFilterOptions(result.data);
-          const status = await fetchGAS('getStatus');
-          dataStatus = status;
-          applyStatus();
-        } catch (err) {
-          console.error('資料載入失敗:', err);
-        } finally {
-          document.getElementById('loading').style.display = 'none';
+        } else {
+          throw new Error(result.error);
         }
+      } catch (err) {
+        console.error('Failed to load data', err);
+        alert('載入資料失敗');
+      } finally {
+        showLoading(false);
       }
+    }
 
-      function updateFilterOptions(data) {
-        const buyers = new Set();
-        const accounts = new Set();
-        const groups = new Set();
-        
-        data.forEach(row => {
-          if (row[0]) buyers.add(row[0]);
-          if (row[1]) accounts.add(row[1]);
-          if (row[2]) groups.add(row[2]);
+    // 更新篩選選項
+    function updateFilterOptions(data) {
+      const buyers = new Set();
+      const accounts = new Set();
+      const groups = new Set();
+      
+      data.forEach(row => {
+        if (row.buyer) buyers.add(row.buyer);
+        if (row.account) accounts.add(row.account);
+        if (row.group) groups.add(row.group);
+      });
+
+      updateSelect('buyerFilter', buyers);
+      updateSelect('accountFilter', accounts);
+      updateSelect('groupFilter', groups);
+    }
+
+    // 更新下拉選單
+    function updateSelect(id, options) {
+      const select = document.getElementById(id);
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">全部</option>';
+      
+      Array.from(options)
+        .filter(Boolean)
+        .sort()
+        .forEach(option => {
+          const opt = document.createElement('option');
+          opt.value = option;
+          opt.textContent = option;
+          select.appendChild(opt);
         });
+      
+      select.value = currentValue;
+    }
 
-        updateSelect('buyerFilter', buyers);
-        updateSelect('accountFilter', accounts);
-        updateSelect('groupFilter', groups);
-      }
+    // 套用篩選
+    function applyFilters() {
+      const buyer = document.getElementById('buyerFilter').value;
+      const account = document.getElementById('accountFilter').value;
+      const group = document.getElementById('groupFilter').value;
+      
+      const filteredData = allData.filter(row => {
+        return (!buyer || row.buyer === buyer) &&
+               (!account || row.account === account) &&
+               (!group || row.group === group);
+      });
+      
+      displayData(filteredData);
+    }
 
-      function updateSelect(id, options) {
-        const select = document.getElementById(id);
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">全部</option>';
-        
-        Array.from(options)
-          .filter(option => option)
-          .sort()
-          .forEach(option => {
-            const opt = document.createElement('option');
-            opt.value = option;
-            opt.textContent = option;
-            select.appendChild(opt);
-          });
-        
-        select.value = currentValue;
-      }
-
-      function displayData(data) {
-        const tableDiv = document.getElementById('dataTable');
-        let html = `
-          <table>
-            <thead>
-              <tr>
-                <th>買手</th>
-                <th>帳號</th>
-                <th>組別</th>
-                <th>組數</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-        
-        data.forEach((row, index) => {
-          html += `
-            <tr id="row-${index}">
-              <td>${row[0] || ''}</td>
-              <td>${row[1] || ''}</td>
-              <td>${row[2] || ''}</td>
-              <td>${row[3] || ''}</td>
-              <td>
-                <button class="btn confirm-btn" onclick="confirmRow(${index})">確認</button>
-                <button class="btn edit-btn" onclick="editRow(${index})">修改</button>
-              </td>
+    // 顯示資料
+    function displayData(data) {
+      const table = `
+        <table>
+          <thead>
+            <tr>
+              <th>買手</th>
+              <th>帳號</th>
+              <th>組別</th>
+              <th>組數</th>
+              <th>操作</th>
             </tr>
-          `;
+          </thead>
+          <tbody>
+            ${data.map(row => `
+              <tr id="row-${row.rowIndex}" class="${row.status}">
+                <td>${row.buyer}</td>
+                <td>${row.account}</td>
+                <td>${row.group}</td>
+                <td>${row.count}</td>
+                <td>
+                  <button class="btn btn-confirm" onclick="confirmRow(${row.rowIndex})">確認</button>
+                  <button class="btn btn-edit" onclick="editRow(${row.rowIndex})">修改</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      document.getElementById('dataTable').innerHTML = table;
+    }
+
+    // 確認行
+    async function confirmRow(rowIndex) {
+      showLoading(true);
+      try {
+        const response = await fetch(`${config.SCRIPT_URL}?action=confirmRow`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ rowIndex })
         });
         
-        html += '</tbody></table>';
-        tableDiv.innerHTML = html;
-        applyStatus();
-      }
-
-      function applyStatus() {
-        for (const [rowIndex, status] of Object.entries(dataStatus)) {
+        const result = await response.json();
+        if (result.success) {
           const row = document.getElementById(`row-${rowIndex}`);
-          if (row) {
-            row.className = status;
+          row.className = 'confirmed';
+          // 更新本地數據
+          const dataIndex = allData.findIndex(item => item.rowIndex === rowIndex);
+          if (dataIndex !== -1) {
+            allData[dataIndex].status = 'confirmed';
           }
+        } else {
+          throw new Error(result.error);
         }
+      } catch (err) {
+        console.error('Failed to confirm row', err);
+        alert('確認失敗');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // 編輯行
+    function editRow(rowIndex) {
+      const row = document.getElementById(`row-${rowIndex}`);
+      const cells = row.getElementsByTagName('td');
+      
+      cells[2].innerHTML = `<input type="text" class="input-field" value="${cells[2].textContent}">`;
+      cells[3].innerHTML = `<input type="number" class="input-field" value="${cells[3].textContent}">`;
+      
+      cells[4].innerHTML = `
+        <button class="btn btn-save" onclick="saveRow(${rowIndex})">儲存</button>
+      `;
+    }
+
+    // 儲存行
+    async function saveRow(rowIndex) {
+      const row = document.getElementById(`row-${rowIndex}`);
+      const cells = row.getElementsByTagName('td');
+      
+      const group = cells[2].getElementsByTagName('input')[0].value;
+      const count = cells[3].getElementsByTagName('input')[0].value;
+      
+      if (!group || !count) {
+        alert('組別和組數不能為空');
+        return;
       }
 
-      function applyFilters() {
-        const buyer = document.getElementById('buyerFilter').value;
-        const account = document.getElementById('accountFilter').value;
-        const group = document.getElementById('groupFilter').value;
-        
-        const filteredData = originalData.filter(row => {
-          const buyerMatch = !buyer || row[0] === buyer;
-          const accountMatch = !account || row[1] === account;
-          const groupMatch = !group || row[2] === group;
-          return buyerMatch && accountMatch && groupMatch;
+      showLoading(true);
+      try {
+        const response = await fetch(`${config.SCRIPT_URL}?action=updateData`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ rowIndex, group, count })
         });
         
-        displayData(filteredData);
-      }
-
-      async function confirmRow(index) {
-        try {
-          document.getElementById('loading').style.display = 'flex';
-          await fetchGAS('confirmRow', { rowIndex: index + 3 });
-          const row = document.getElementById(`row-${index}`);
-          row.className = 'confirmed';
-          dataStatus[index] = 'confirmed';
-        } catch (err) {
-          console.error('確認失敗:', err);
-        } finally {
-          document.getElementById('loading').style.display = 'none';
-        }
-      }
-
-      function editRow(index) {
-        const row = document.getElementById(`row-${index}`);
-        const cells = row.getElementsByTagName('td');
-        
-        cells[2].innerHTML = `<input type="text" value="${cells[2].textContent}" class="filter-select">`;
-        cells[3].innerHTML = `<input type="number" value="${cells[3].textContent}" class="filter-select">`;
-        
-        cells[4].innerHTML = `<button class="btn save-btn" onclick="saveRow(${index})">儲存</button>`;
-      }
-
-      async function saveRow(index) {
-        const row = document.getElementById(`row-${index}`);
-        const cells = row.getElementsByTagName('td');
-        
-        const newGroup = cells[2].getElementsByTagName('input')[0].value;
-        const newCount = cells[3].getElementsByTagName('input')[0].value;
-        
-        try {
-          document.getElementById('loading').style.display = 'flex';
-          await fetchGAS('updateData', {
-            rowIndex: index + 3,
-            newGroup,
-            newCount
-          });
-
-          cells[2].textContent = newGroup;
-          cells[3].textContent = newCount;
-          
+        const result = await response.json();
+        if (result.success) {
+          cells[2].textContent = group;
+          cells[3].textContent = count;
           cells[4].innerHTML = `
-            <button class="btn confirm-btn" onclick="confirmRow(${index})">確認</button>
-            <button class="btn edit-btn" onclick="editRow(${index})">修改</button>
+            <button class="btn btn-confirm" onclick="confirmRow(${rowIndex})">確認</button>
+            <button class="btn btn-edit" onclick="editRow(${rowIndex})">修改</button>
           `;
-          
           row.className = 'modified';
-          dataStatus[index] = 'modified';
           
-          const result = await fetchGAS('getData');
-          originalData = result.data;
-          updateFilterOptions(result.data);
-        } catch (err) {
-          console.error('儲存失敗:', err);
-        } finally {
-          document.getElementById('loading').style.display = 'none';
+          // 更新本地數據
+          const dataIndex = allData.findIndex(item => item.rowIndex === rowIndex);
+          if (dataIndex !== -1) {
+            allData[dataIndex].group = group;
+            allData[dataIndex].count = count;
+            allData[dataIndex].status = 'modified';
+          }
+          
+          // 更新篩選選項
+          updateFilterOptions(allData);
+        } else {
+          throw new Error(result.error);
         }
+      } catch (err) {
+        console.error('Failed to save row', err);
+        alert('儲存失敗');
+      } finally {
+        showLoading(false);
       }
+    }
 
-      window.onload = initializeLiff;
-    </script>
-  </body>
+    // 顯示/隱藏載入中
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'flex' : 'none';
+    }
+
+    // 錯誤處理
+    window.onerror = function(msg, url, line, col, error) {
+      console.error('An error occurred:', { msg, url, line, col, error });
+      alert('發生錯誤，請重新整理頁面');
+      return false;
+    };
+
+    // 初始化
+    window.onload = initializeLiff;
+  </script>
+</body>
 </html>
