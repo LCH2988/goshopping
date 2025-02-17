@@ -1,161 +1,206 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>搶購名單管理</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #f4f4f4;
-    }
-    input {
-      width: 80px;
-      padding: 5px;
-    }
-    button {
-      padding: 5px 10px;
-      cursor: pointer;
-    }
-    .message {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 5px;
-    }
-    .success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-    .error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-  </style>
-</head>
-<body>
-  <h1>搶購名單管理</h1>
-  <table id="purchaseTable">
-    <thead>
-      <tr>
-        <th>買家</th>
-        <th>帳號</th>
-        <th>群組</th>
-        <th>數量</th>
-        <th>確認群組</th>
-        <th>確認數量</th>
-        <th>操作</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- 資料將動態插入 -->
-    </tbody>
-  </table>
-  <div id="message" class="message"></div>
-
-  <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQXLGaGPf-2Mmc5LyMs5hBAVXKjryCYl24AT525KIJNFPj-9K2SMJoie0JflTMR3DR/exec'; // 替換為您的 Google Apps Script 部署 URL
-
-    // 獲取搶購名單資料
-    async function fetchPurchaseData() {
-      try {
-        const response = await fetch(`${SCRIPT_URL}?action=getPurchaseData`);
-        const result = await response.json();
-        if (result.success) {
-          renderTable(result.data);
-        } else {
-          showMessage(result.message, 'error');
-        }
-      } catch (error) {
-        showMessage('獲取資料失敗: ' + error.message, 'error');
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <title>資料管理系統</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
       }
-    }
+      .filter-section {
+        margin-bottom: 20px;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border-radius: 5px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #4CAF50;
+        color: white;
+      }
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+      .btn {
+        padding: 5px 10px;
+        margin: 2px;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      .btn-confirm {
+        background-color: #4CAF50;
+        color: white;
+      }
+      .btn-edit {
+        background-color: #2196F3;
+        color: white;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.4);
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 500px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>資料管理系統</h1>
+    
+    <div class="filter-section">
+      <h3>篩選條件</h3>
+      <label>B欄篩選：</label>
+      <input type="text" id="filterB" onkeyup="applyFilters()">
+      
+      <label>C欄篩選：</label>
+      <input type="text" id="filterC" onkeyup="applyFilters()">
+      
+      <label>G欄篩選：</label>
+      <input type="text" id="filterG" onkeyup="applyFilters()">
+    </div>
 
-    // 渲染表格
-    function renderTable(data) {
-      const tbody = document.querySelector('#purchaseTable tbody');
-      tbody.innerHTML = data.map(item => `
-        <tr data-row-id="${item.rowId}">
-          <td>${item.buyer}</td>
-          <td>${item.account}</td>
-          <td><input type="text" value="${item.group}" id="group_${item.rowId}"></td>
-          <td><input type="text" value="${item.quantity}" id="quantity_${item.rowId}"></td>
-          <td>${item.confirmedGroup}</td>
-          <td>${item.confirmedQuantity}</td>
-          <td>
-            <button onclick="updateRow(${item.rowId})">更新</button>
-            <button onclick="confirmRow(${item.rowId})">確認</button>
-          </td>
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>B欄</th>
+          <th>C欄</th>
+          <th>G欄</th>
+          <th>H欄</th>
+          <th>操作</th>
         </tr>
-      `).join('');
-    }
+      </thead>
+      <tbody id="tableBody">
+      </tbody>
+    </table>
 
-    // 更新資料
-    async function updateRow(rowId) {
-      const group = document.querySelector(`#group_${rowId}`).value;
-      const quantity = document.querySelector(`#quantity_${rowId}`).value;
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <h2>修改資料</h2>
+        <input type="hidden" id="editRowIndex">
+        <p>
+          <label>G欄：</label>
+          <input type="text" id="editG">
+        </p>
+        <p>
+          <label>H欄：</label>
+          <input type="text" id="editH">
+        </p>
+        <button onclick="saveEdit()" class="btn btn-confirm">儲存</button>
+        <button onclick="closeModal()" class="btn">取消</button>
+      </div>
+    </div>
 
-      try {
-        const response = await fetch(`${SCRIPT_URL}?action=updatePurchaseData`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            rowId,
-            group,
-            quantity,
-          }),
+    <script>
+      let allData = [];
+      
+      // 載入資料
+      function loadData() {
+        google.script.run.withSuccessHandler(function(data) {
+          allData = data;
+          displayData(data);
+        }).getData();
+      }
+
+      // 顯示資料
+      function displayData(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        data.forEach((row, index) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${row[1]}</td>
+            <td>${row[2]}</td>
+            <td>${row[6]}</td>
+            <td>${row[7]}</td>
+            <td>
+              <button onclick="confirmRow(${index})" class="btn btn-confirm">確認</button>
+              <button onclick="editRow(${index})" class="btn btn-edit">修改</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
         });
-        const result = await response.json();
-        if (result.success) {
-          showMessage('更新成功', 'success');
-          fetchPurchaseData(); // 刷新資料
-        } else {
-          showMessage(result.message, 'error');
-        }
-      } catch (error) {
-        showMessage('更新失敗: ' + error.message, 'error');
       }
-    }
 
-    // 確認資料
-    async function confirmRow(rowId) {
-      try {
-        const response = await fetch(`${SCRIPT_URL}?action=confirmData&rowId=${rowId}`);
-        const result = await response.json();
-        if (result.success) {
-          showMessage('確認成功', 'success');
-          fetchPurchaseData(); // 刷新資料
-        } else {
-          showMessage(result.message, 'error');
-        }
-      } catch (error) {
-        showMessage('確認失敗: ' + error.message, 'error');
+      // 篩選功能
+      function applyFilters() {
+        const filterB = document.getElementById('filterB').value.toLowerCase();
+        const filterC = document.getElementById('filterC').value.toLowerCase();
+        const filterG = document.getElementById('filterG').value.toLowerCase();
+        
+        const filteredData = allData.filter(row => {
+          return (!filterB || row[1].toLowerCase().includes(filterB)) &&
+                 (!filterC || row[2].toLowerCase().includes(filterC)) &&
+                 (!filterG || row[6].toLowerCase().includes(filterG));
+        });
+        
+        displayData(filteredData);
       }
-    }
 
-    // 顯示訊息
-    function showMessage(message, type) {
-      const messageDiv = document.getElementById('message');
-      messageDiv.textContent = message;
-      messageDiv.className = `message ${type}`;
-    }
+      // 確認按鈕功能
+      function confirmRow(index) {
+        const row = allData[index];
+        google.script.run.withSuccessHandler(function() {
+          alert('確認成功！');
+        }).confirmRow(index + 3); // 加3是因為試算表從A3開始
+      }
 
-    // 初始化：載入資料
-    fetchPurchaseData();
-  </script>
-</body>
+      // 開啟編輯視窗
+      function editRow(index) {
+        const modal = document.getElementById('editModal');
+        const row = allData[index];
+        
+        document.getElementById('editRowIndex').value = index;
+        document.getElementById('editG').value = row[6];
+        document.getElementById('editH').value = row[7];
+        
+        modal.style.display = 'block';
+      }
+
+      // 關閉編輯視窗
+      function closeModal() {
+        document.getElementById('editModal').style.display = 'none';
+      }
+
+      // 儲存編輯
+      function saveEdit() {
+        const index = parseInt(document.getElementById('editRowIndex').value);
+        const newG = document.getElementById('editG').value;
+        const newH = document.getElementById('editH').value;
+        
+        google.script.run.withSuccessHandler(function() {
+          alert('修改成功！');
+          closeModal();
+          loadData(); // 重新載入資料
+        }).updateRow(index + 3, newG, newH);
+      }
+
+      // 初始載入
+      window.onload = function() {
+        loadData();
+      }
+    </script>
+  </body>
 </html>
