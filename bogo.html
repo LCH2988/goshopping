@@ -97,18 +97,15 @@
                             <table class="table table-striped table-hover">
                                 <thead>
                                     <tr>
-                                        <th>帳號</th>
-                                        <th>群組</th>
-                                        <th>姓名</th>
-                                        <th>電話</th>
-                                        <th>地址</th>
-                                        <th>狀態</th>
-                                        <th>操作</th>
+                                        <th>賣手</th>
+                                        <th>搶購帳號</th>                                        
+                                        <th>購買組別</th>
+                                        <th>購買數量</th>
                                     </tr>
                                 </thead>
                                 <tbody id="dataTableBody">
                                     <tr>
-                                        <td colspan="7" class="text-center">載入中...</td>
+                                        <td colspan="4" class="text-center">載入中...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -145,7 +142,7 @@
     <script>
       const CONFIG = {
     LIFF_ID: '1657285806-2bmkYWkN',
-    GAS_URL: 'https://script.google.com/macros/s/AKfycbyu8jOplanRLd_RabCDxLNKRahQU6Jc0-GTRd8jQSVD5fKVyFzlB0kVbu__63gfQqdAPQ/exec'
+    GAS_URL: 'https://script.google.com/macros/s/AKfycbzDa0Qym05Uk0p9ObMmkNjvMpliAaBAI-c0woI7hx4XzvlyQavDnP_K4DEImiS4nnHutQ/exec'
 };
 
 class App {
@@ -285,7 +282,7 @@ class App {
         // 取得唯一值
         const accounts = [...new Set(this.purchaseData.map(item => item.account))];
         const groups = [...new Set(this.purchaseData.map(item => item.group))];
-        const statuses = [...new Set(this.purchaseData.map(item => item.status))];
+        const statuses = [...new Set(this.purchaseData.map(item => item.name4))];
 
         // 更新篩選器選項
         this.updateSelect(this.accountFilter, accounts);
@@ -303,26 +300,27 @@ class App {
     applyFilters() {
         const account = this.accountFilter.val();
         const group = this.groupFilter.val();
-        const status = this.statusFilter.val();
+        const name4 = this.statusFilter.val();
 
         this.filteredData = this.purchaseData.filter(item => {
             return (!account || item.account === account) &&
                    (!group || item.group === group) &&
-                   (!status || item.status === status);
+                   (!name4 || item.name4 === name4);
         });
 
         this.renderTable();
     }
-
+ status: row[5],
+        note: row[6]
     renderTable() {
         this.tableBody.innerHTML = this.filteredData.map(item => `
             <tr>
                 <td>${item.account}</td>
                 <td>${item.group}</td>
-                <td>${item.name}</td>
-                <td>${item.phone}</td>
-                <td>${item.address}</td>
-                <td>${item.status}</td>
+                <td>${item.name1}</td>
+                <td>${item.name2}</td>
+                <td>${item.name3}</td>
+                <td>${item.name4}</td>
                 <td>
                     <button class="btn btn-primary btn-sm" onclick="app.showConfirmModal('${item.account}')">
                         確認
@@ -344,16 +342,16 @@ class App {
                 <strong>搶購帳號：</strong> ${item.group}
             </div>
             <div class="mb-3">
-                <strong>ID：</strong> ${item.name}
+                <strong>ID：</strong> ${item.name1}
             </div>
             <div class="mb-3">
-                <strong>密碼：</strong> ${item.phone}
+                <strong>密碼：</strong> ${item.name2}
             </div>
             <div class="mb-3">
-                <strong>後三碼：</strong> ${item.address}
+                <strong>購買組別：</strong> ${item.name3}
             </div>
             <div class="mb-3">
-                <strong>購買組別：</strong> ${item.status}
+                <strong>購買組數：</strong> ${item.name4}
             </div>
         `;
 
