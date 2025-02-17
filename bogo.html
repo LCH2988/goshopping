@@ -63,16 +63,16 @@
           <div class="mb-3">
             <label class="form-label">搶購帳號</label>
             <select class="form-select" id="account" required>
-                            <option value="">請選擇帳號</option>
-                        </select>
+              <option value="">請選擇帳號</option>
+            </select>
           </div>
 
           <!-- 產品選擇 -->
           <div class="mb-3">
             <label class="form-label">產品</label>
             <select class="form-select" id="product" required>
-                            <option value="">請選擇產品</option>
-                        </select>
+              <option value="">請選擇產品</option>
+            </select>
           </div>
 
           <!-- 回報數量 -->
@@ -112,66 +112,65 @@
   <!-- Scripts -->
   <script>
     const CONFIG = {
-    LIFF_ID: '1657285806-2bmkYWkN',
-    API_URL: 'https://script.google.com/macros/s/AKfycbyXt6xASfCr4aJSxtAqKBD10OwWDv98HMIgbOKwMMM74yDAuw982lv_-3jfEXVxYo8INw/exec',
-    VERSION: '1.0.0'
+      LIFF_ID: '1657285806-2bmkYWkN', // 替換為你的 LIFF ID
+      API_URL: 'https://script.google.com/macros/s/AKfycbygP6YiLQ9xQ4Gd7G88HkSLK4FadkkuJTjbQh6Hoj_laDPGQdsKMJ-Ef7h5De7m-u9eHQ/exec', // 替換為你的 GAS 部署網址
+      VERSION: '1.0.0'
     };
 
     class API {
-    static async getProducts() {
+      static async getProducts() {
         try {
-            const response = await fetch(`${CONFIG.API_URL}?action=getProducts`);
-            const data = await response.json();
-            return data;
+          const response = await fetch(`${CONFIG.API_URL}?action=getProducts`);
+          const data = await response.json();
+          return data;
         } catch (error) {
-            console.error('Error fetching products:', error);
-            throw error;
+          console.error('Error fetching products:', error);
+          throw error;
         }
+      }
+
+      static async getAccounts() {
+        try {
+          const response = await fetch(`${CONFIG.API_URL}?action=getAccounts`);
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error fetching accounts:', error);
+          throw error;
+        }
+      }
+
+      static async submitReport(reportData) {
+        try {
+          const response = await fetch(CONFIG.API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              action: 'submitReport',
+              data: reportData
+            })
+          });
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error('Error submitting report:', error);
+          throw error;
+        }
+      }
     }
 
-    static async getAccounts() {
-        try {
-            const response = await fetch(`${CONFIG.API_URL}?action=getAccounts`);
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Error fetching accounts:', error);
-            throw error;
-        }
-    }
-
-    static async submitReport(reportData) {
-        try {
-            const response = await fetch(CONFIG.API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'submitReport',
-                    data: reportData
-                })
-            });
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Error submitting report:', error);
-            throw error;
-        }
-     }
-   }
-
-
-   class App {
-    constructor() {
+    class App {
+      constructor() {
         this.userData = null;
         this.products = [];
         this.accounts = [];
         this.initializeElements();
         this.initializeEventListeners();
-    }
+      }
 
-    initializeElements() {
+      initializeElements() {
         this.form = document.getElementById('reportForm');
         this.userNameInput = document.getElementById('userName');
         this.accountSelect = document.getElementById('account');
@@ -180,135 +179,142 @@
         this.priceDisplay = document.getElementById('priceDisplay');
         this.pvDisplay = document.getElementById('pvDisplay');
         this.loadingOverlay = document.getElementById('loadingOverlay');
-    }
+      }
 
-    initializeEventListeners() {
+      initializeEventListeners() {
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
         this.productSelect.addEventListener('change', () => this.updateProductInfo());
-    }
+      }
 
-    showLoading() {
+      showLoading() {
         this.loadingOverlay.classList.remove('d-none');
-    }
+      }
 
-    hideLoading() {
+      hideLoading() {
         this.loadingOverlay.classList.add('d-none');
-    }
+      }
 
-    async initialize() {
+      async initialize() {
         try {
-            this.showLoading();
-            await this.initializeLiff();
-            await this.loadData();
+          this.showLoading();
+          await this.initializeLiff();
+          await this.loadData();
         } catch (error) {
-            console.error('Initialization error:', error);
-            alert('初始化失敗，請重新整理頁面');
+          console.error('Initialization error:', error);
+          alert('初始化失敗，請重新整理頁面');
         } finally {
-            this.hideLoading();
+          this.hideLoading();
         }
-    }
+      }
 
-    async initializeLiff() {
+      async initializeLiff() {
         try {
-            await liff.init({ liffId: CONFIG.LIFF_ID });
-            if (!liff.isLoggedIn()) {
-                liff.login();
-                return;
-            }
-            const profile = await liff.getProfile();
-            this.userData = profile;
-            this.userNameInput.value = profile.displayName;
+          await liff.init({ liffId: CONFIG.LIFF_ID });
+          if (!liff.isLoggedIn()) {
+            liff.login();
+            return;
+          }
+          const profile = await liff.getProfile();
+          this.userData = profile;
+          this.userNameInput.value = profile.displayName;
         } catch (error) {
-            console.error('LIFF initialization error:', error);
-            throw error;
+          console.error('LIFF initialization error:', error);
+          throw error;
         }
-    }
+      }
 
-    async loadData() {
+      async loadData() {
         try {
-            const [products, accounts] = await Promise.all([
-                API.getProducts(),
-                API.getAccounts()
-            ]);
+          const [productsResponse, accountsResponse] = await Promise.all([
+            API.getProducts(),
+            API.getAccounts()
+          ]);
 
-            this.products = products;
-            this.accounts = accounts;
+          if (productsResponse.success) {
+            this.products = productsResponse.data;
+          }
+          if (accountsResponse.success) {
+            this.accounts = accountsResponse.data;
+          }
 
-            this.populateSelects();
+          this.populateSelects();
         } catch (error) {
-            console.error('Data loading error:', error);
-            throw error;
+          console.error('Data loading error:', error);
+          throw error;
         }
-    }
+      }
 
-    populateSelects() {
+      populateSelects() {
+        // 清空現有選項
+        this.accountSelect.innerHTML = '<option value="">請選擇帳號</option>';
+        this.productSelect.innerHTML = '<option value="">請選擇產品</option>';
+
         // 填充帳號選單
         this.accounts.forEach(account => {
-            const option = document.createElement('option');
-            option.value = JSON.stringify(account);
-            option.textContent = `${account.account} (${account.group})`;
-            this.accountSelect.appendChild(option);
+          const option = document.createElement('option');
+          option.value = JSON.stringify(account);
+          option.textContent = `${account.account} (${account.group})`;
+          this.accountSelect.appendChild(option);
         });
 
         // 填充產品選單
         this.products.forEach(product => {
-            const option = document.createElement('option');
-            option.value = JSON.stringify(product);
-            option.textContent = product.name;
-            this.productSelect.appendChild(option);
+          const option = document.createElement('option');
+          option.value = JSON.stringify(product);
+          option.textContent = product.name;
+          this.productSelect.appendChild(option);
         });
-    }
+      }
 
-    updateProductInfo() {
+      updateProductInfo() {
         const selectedProduct = JSON.parse(this.productSelect.value || '{"price": "-", "pv": "-"}');
         this.priceDisplay.textContent = selectedProduct.price;
         this.pvDisplay.textContent = selectedProduct.pv;
-    }
+      }
 
-    async handleSubmit(e) {
+      async handleSubmit(e) {
         e.preventDefault();
         
         try {
-            this.showLoading();
+          this.showLoading();
 
-            const accountData = JSON.parse(this.accountSelect.value);
-            const productData = JSON.parse(this.productSelect.value);
-            const quantity = parseInt(this.quantityInput.value);
+          const accountData = JSON.parse(this.accountSelect.value);
+          const productData = JSON.parse(this.productSelect.value);
+          const quantity = parseInt(this.quantityInput.value);
 
-            const reportData = {
-                account: accountData.account,
-                group: accountData.group,
-                quantity: quantity,
-                userName: this.userData.displayName,
-                price: productData.price,
-                pv: productData.pv,
-                productName: productData.name
-            };
+          const reportData = {
+            account: accountData.account,
+            group: accountData.group,
+            quantity: quantity,
+            userName: this.userData.displayName,
+            price: productData.price,
+            pv: productData.pv,
+            productName: productData.name
+          };
 
-            const result = await API.submitReport(reportData);
+          const result = await API.submitReport(reportData);
 
-            if (result.success) {
-                alert('回報成功！');
-                this.form.reset();
-                this.updateProductInfo();
-            } else {
-                alert(`回報失敗：${result.message}`);
-            }
+          if (result.success) {
+            alert('回報成功！');
+            this.form.reset();
+            this.updateProductInfo();
+          } else {
+            alert(`回報失敗：${result.message}`);
+          }
         } catch (error) {
-            console.error('Submit error:', error);
-            alert('系統錯誤，請稍後再試');
+          console.error('Submit error:', error);
+          alert('系統錯誤，請稍後再試');
         } finally {
-            this.hideLoading();
+          this.hideLoading();
         }
+      }
     }
-}
 
-// 初始化應用
-document.addEventListener('DOMContentLoaded', () => {
-    const app = new App();
-    app.initialize();
-});
-
+    // 初始化應用
+    document.addEventListener('DOMContentLoaded', () => {
+      const app = new App();
+      app.initialize();
+    });
   </script>
 </body>
 
