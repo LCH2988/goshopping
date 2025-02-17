@@ -148,10 +148,9 @@
         // 設定檔
         const CONFIG = {
             LIFF_ID: '1657285806-2bmkYWkN', // 替換為你的 LIFF ID
-            GAS_URL: 'https://script.google.com/macros/s/AKfycbzQ2hXp6yMr8cctkWOZPmEo4Gx_JO2Xt0M7yuu9MGd-FLWNUCmUTmbweo3san0eD3x0JA/exec' // 替換為你的 GAS 部署網址
+            GAS_URL: 'https://script.google.com/macros/s/AKfycbz632qGAOiD7K4I97FENK-nEVJVAZQOaYOlBr89h31mNB0gATKUmra68Vvl0UfDrLicIw/exec' // 替換為你的 GAS 部署網址
         };
-    </script>
-    <script>
+
         class App {
             constructor() {
                 this.purchaseData = [];
@@ -161,38 +160,28 @@
             }
 
             initializeElements() {
-                // Profile elements
                 this.profileImage = document.getElementById('profileImage');
                 this.displayName = document.getElementById('displayName');
                 this.userId = document.getElementById('userId');
-
-                // Filter elements
                 this.buyerFilter = $('#buyerFilter');
                 this.accountFilter = $('#accountFilter');
                 this.groupFilter = $('#groupFilter');
-
-                // Table element
                 this.tableBody = document.getElementById('dataTableBody');
-
-                // Modal elements
                 this.editModal = new bootstrap.Modal(document.getElementById('editModal'));
                 this.editModalContent = document.getElementById('editModalContent');
                 this.editModalBtn = document.getElementById('editModalBtn');
             }
 
             initializeEventListeners() {
-                // Initialize Select2
                 $('.select2').select2({
                     placeholder: '請選擇',
                     allowClear: true
                 });
 
-                // Add filter change events
                 this.buyerFilter.on('change', () => this.applyFilters());
                 this.accountFilter.on('change', () => this.applyFilters());
                 this.groupFilter.on('change', () => this.applyFilters());
 
-                // Modal edit button
                 this.editModalBtn.addEventListener('click', () => {
                     const rowId = this.editModalBtn.dataset.rowId;
                     if (rowId) {
@@ -336,8 +325,10 @@
                 try {
                     const response = await fetch(CONFIG.GAS_URL, {
                         method: 'POST',
+                        mode: 'cors',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Accept': 'application/json'
                         },
                         body: JSON.stringify({
                             action: 'confirmData',
@@ -400,8 +391,10 @@
 
                     const response = await fetch(CONFIG.GAS_URL, {
                         method: 'POST',
+                        mode: 'cors',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Accept': 'application/json'
                         },
                         body: JSON.stringify({
                             action: 'updatePurchaseData',
