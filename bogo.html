@@ -1,226 +1,348 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>搶購回報登記</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            margin-top: 20px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        h1 {
-            color: #0d6efd;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 24px;
-        }
-        .user-profile-img {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        #userInfo {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .loading-spinner {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>搶購回報系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .container {
+      max-width: 600px;
+    }
+    .card {
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .info-display {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+    }
+    .info-display p {
+      margin-bottom: 0;
+    }
+  </style>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>搶購回報登記</h1>
-        
-        <!-- 使用者資訊區塊 -->
-        <div id="userInfo">
-            <div class="loading-spinner">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        </div>
+  <div class="container">
+    <div class="card my-4">
+      <div class="card-header bg-primary text-white">
+        <h2 class="text-center mb-0">搶購回報登記</h2>
+      </div>
+      <div class="card-body">
+        <form id="reportForm">
+          <div class="mb-3">
+            <label class="form-label">使用者名稱</label>
+            <input type="text" class="form-control" id="userName" readonly>
+          </div>
 
-        <!-- 表單區塊 -->
-        <form id="purchaseForm" style="display: none;">
-            <div class="form-group">
-                <label for="account">搶購帳號</label>
-                <select class="form-select" id="account" required>
-                    <option value="">請選擇搶購帳號</option>
-                    <!-- 選項將由 JavaScript 動態載入 -->
-                </select>
-            </div>
+          <div class="mb-3">
+            <label class="form-label">搶購帳號</label>
+            <select class="form-select" id="account" required>
+              <option value="">請選擇帳號</option>
+            </select>
+          </div>
 
-            <div class="form-group">
-                <label for="product">產品名稱</label>
-                <select class="form-select" id="product" required>
-                    <option value="">請選擇產品</option>
-                    <!-- 選項將由 JavaScript 動態載入 -->
-                </select>
-            </div>
+          <div class="mb-3">
+            <label class="form-label">產品</label>
+            <select class="form-select" id="product" required>
+              <option value="">請選擇產品</option>
+            </select>
+          </div>
 
-            <div class="form-group">
-                <label for="quantity">數量</label>
-                <input type="number" class="form-control" id="quantity" required min="1" value="1">
-            </div>
+          <div class="mb-3">
+            <label class="form-label">回報數量</label>
+            <input type="number" class="form-control" id="quantity" min="1" required>
+          </div>
 
-            <button type="submit" class="btn btn-primary w-100">送出回報</button>
+          <div class="info-display mb-3">
+            <div class="row">
+              <div class="col-6">
+                <p>單價: <span id="priceDisplay">-</span></p>
+              </div>
+              <div class="col-6">
+                <p>PV: <span id="pvDisplay">-</span></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <button type="submit" class="btn btn-primary">送出回報</button>
+          </div>
         </form>
-
-        <!-- 錯誤訊息區塊 -->
-        <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+      </div>
     </div>
+  </div>
 
-    <!-- LIFF SDK -->
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script>
-        // 設定常數
-        const LIFF_ID = '1657285806-2bmkYWkN'; // 請替換成你的 LIFF ID
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwseVMxewWBtQ17vm3SVFeprdAtnN4yh5uvG49mVvKI17sYNQZ2qzspM4srqGswzRYAqg/exec'; // 請替換成你的 GAS 部署網址
+  <div id="loadingOverlay" class="loading-overlay d-none">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
 
-        // LIFF 初始化
-        async function initializeLiff() {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                    return;
-                }
+  <script>
+    const CONFIG = {
+      LIFF_ID: '1657285806-2bmkYWkN', // 替換為你的 LIFF ID
+      API_URL: 'https://script.google.com/macros/s/AKfycbwis-BiPnzxg7G5hM6ds43u8MQ6_TJsKuWAS8OFpq0Xl8-BaA8xeBzW6kI-6rry98hXWA/exec' // 替換為你的 GAS 部署網址
+    };
 
-                const profile = await liff.getProfile();
-                displayUserInfo(profile);
-                document.getElementById('purchaseForm').style.display = 'block';
-                await loadInitialData();
-
-            } catch (error) {
-                console.error('LIFF initialization failed:', error);
-                showError('初始化失敗，請稍後再試');
+    class API {
+      static async getProducts() {
+        try {
+          const response = await fetch(`${CONFIG.API_URL}?action=getProducts`, {
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+              'Accept': 'application/json',
             }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          return await response.json();
+        } catch (error) {
+          console.error('Error fetching products:', error);
+          throw error;
         }
+      }
 
-        // 顯示使用者資訊
-        function displayUserInfo(profile) {
-            const userInfoDiv = document.getElementById('userInfo');
-            userInfoDiv.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <img src="${profile.pictureUrl}" alt="個人頭像" class="user-profile-img me-3">
-                    <div>
-                        <div class="fw-bold">${profile.displayName}</div>
-                        <small class="text-muted">${profile.userId}</small>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 載入初始資料
-        async function loadInitialData() {
-            try {
-                const response = await fetch(`${SCRIPT_URL}?action=getInitialData`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    // 載入帳號選項
-                    const accountSelect = document.getElementById('account');
-                    data.accounts.forEach(account => {
-                        const option = document.createElement('option');
-                        option.value = account;
-                        option.textContent = account;
-                        accountSelect.appendChild(option);
-                    });
-
-                    // 載入產品選項
-                    const productSelect = document.getElementById('product');
-                    data.products.forEach(product => {
-                        const option = document.createElement('option');
-                        option.value = product;
-                        option.textContent = product;
-                        productSelect.appendChild(option);
-                    });
-                } else {
-                    showError('載入資料失敗：' + data.message);
-                }
-            } catch (error) {
-                console.error('Error loading initial data:', error);
-                showError('載入資料時發生錯誤');
+      static async getAccounts() {
+        try {
+          const response = await fetch(`${CONFIG.API_URL}?action=getAccounts`, {
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+              'Accept': 'application/json',
             }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          return await response.json();
+        } catch (error) {
+          console.error('Error fetching accounts:', error);
+          throw error;
         }
+      }
 
-        // 顯示錯誤訊息
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
+      static async submitReport(reportData) {
+        try {
+          console.log('Sending report data:', reportData);
+          
+          const response = await fetch(CONFIG.API_URL, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              action: 'submitReport',
+              data: reportData
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const result = await response.json();
+          console.log('API response:', result);
+          
+          if (!result.success) {
+            throw new Error(result.message || '未知錯誤');
+          }
+          
+          return result;
+        } catch (error) {
+          console.error('Error in submitReport:', error);
+          throw error;
         }
+      }
+    }
 
-        // 表單提交處理
-        document.getElementById('purchaseForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            try {
-                const profile = await liff.getProfile();
-                const formData = {
-                    userId: profile.userId,
-                    userName: profile.displayName,
-                    account: document.getElementById('account').value,
-                    product: document.getElementById('product').value,
-                    quantity: document.getElementById('quantity').value
-                };
+    class App {
+      constructor() {
+        this.userData = null;
+        this.products = [];
+        this.accounts = [];
+        this.initializeElements();
+        this.initializeEventListeners();
+      }
 
-                const submitButton = e.target.querySelector('button[type="submit"]');
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 提交中...';
+      initializeElements() {
+        this.form = document.getElementById('reportForm');
+        this.userNameInput = document.getElementById('userName');
+        this.accountSelect = document.getElementById('account');
+        this.productSelect = document.getElementById('product');
+        this.quantityInput = document.getElementById('quantity');
+        this.priceDisplay = document.getElementById('priceDisplay');
+        this.pvDisplay = document.getElementById('pvDisplay');
+        this.loadingOverlay = document.getElementById('loadingOverlay');
+      }
 
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(formData)
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    alert('回報成功！');
-                    document.getElementById('purchaseForm').reset();
-                    
-                    if (liff.isInClient()) {
-                        liff.closeWindow();
-                    }
-                } else {
-                    showError('回報失敗：' + result.message);
-                }
-            } catch (error) {
-                console.error('Error submitting form:', error);
-                showError('提交表單時發生錯誤');
-            } finally {
-                const submitButton = e.target.querySelector('button[type="submit"]');
-                submitButton.disabled = false;
-                submitButton.innerHTML = '送出回報';
-            }
+      initializeEventListeners() {
+        this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+        this.productSelect.addEventListener('change', () => this.updateProductInfo());
+      }
+
+      showLoading() {
+        this.loadingOverlay.classList.remove('d-none');
+      }
+
+      hideLoading() {
+        this.loadingOverlay.classList.add('d-none');
+      }
+
+      async initialize() {
+        try {
+          this.showLoading();
+          await this.initializeLiff();
+          await this.loadData();
+        } catch (error) {
+          console.error('Initialization error:', error);
+          alert('初始化失敗，請重新整理頁面');
+        } finally {
+          this.hideLoading();
+        }
+      }
+
+      async initializeLiff() {
+        try {
+          await liff.init({ liffId: CONFIG.LIFF_ID });
+          if (!liff.isLoggedIn()) {
+            liff.login();
+            return;
+          }
+          const profile = await liff.getProfile();
+          this.userData = profile;
+          this.userNameInput.value = profile.displayName;
+        } catch (error) {
+          console.error('LIFF initialization error:', error);
+          throw error;
+        }
+      }
+
+      async loadData() {
+        try {
+          const [productsResponse, accountsResponse] = await Promise.all([
+            API.getProducts(),
+            API.getAccounts()
+          ]);
+
+          if (productsResponse.success) {
+            this.products = productsResponse.data;
+          }
+          if (accountsResponse.success) {
+            this.accounts = accountsResponse.data;
+          }
+
+          this.populateSelects();
+        } catch (error) {
+          console.error('Data loading error:', error);
+          throw error;
+        }
+      }
+
+      populateSelects() {
+        this.accountSelect.innerHTML = '<option value="">請選擇帳號</option>';
+        this.productSelect.innerHTML = '<option value="">請選擇產品</option>';
+
+        this.accounts.forEach(account => {
+          const option = document.createElement('option');
+          option.value = JSON.stringify(account);
+          option.textContent = `${account.account} (${account.group})`;
+          this.accountSelect.appendChild(option);
         });
 
-        // 初始化
-        initializeLiff();
-    </script>
+        this.products.forEach(product => {
+          const option = document.createElement('option');
+          option.value = JSON.stringify(product);
+          option.textContent = product.name;
+          this.productSelect.appendChild(option);
+        });
+      }
+
+      updateProductInfo() {
+        const selectedProduct = JSON.parse(this.productSelect.value || '{"price": "-", "pv": "-"}');
+        this.priceDisplay.textContent = selectedProduct.price;
+        this.pvDisplay.textContent = selectedProduct.pv;
+      }
+
+      async handleSubmit(e) {
+        e.preventDefault();
+        
+        try {
+          this.showLoading();
+          console.log('開始提交...');
+
+          if (!this.accountSelect.value || !this.productSelect.value) {
+            throw new Error('請選擇帳號和產品');
+          }
+
+          const accountData = JSON.parse(this.accountSelect.value);
+          const productData = JSON.parse(this.productSelect.value);
+          const quantity = parseInt(this.quantityInput.value);
+
+          if (!quantity || quantity < 1) {
+            throw new Error('請輸入有效的數量');
+          }
+
+          const reportData = {
+            account: accountData.account,
+            group: accountData.group,
+            quantity: quantity,
+            userName: this.userData.displayName,
+            price: productData.price,
+            pv: productData.pv,
+            productName: productData.name
+          };
+
+          console.log('準備提交的資料:', reportData);
+
+          const result = await API.submitReport(reportData);
+          console.log('提交結果:', result);
+
+          if (result.success) {
+            alert('回報成功！');
+            this.form.reset();
+            this.updateProductInfo();
+          } else {
+            alert(`回報失敗：${result.message}`);
+          }
+        } catch (error) {
+          console.error('提交錯誤:', error);
+          alert(`提交失敗：${error.message}`);
+        } finally {
+          this.hideLoading();
+        }
+      }
+    }
+
+    // 初始化應用
+    document.addEventListener('DOMContentLoaded', () => {
+      const app = new App();
+      app.initialize();
+    });
+  </script>
 </body>
 </html>
