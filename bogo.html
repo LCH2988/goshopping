@@ -31,6 +31,7 @@
         background-color: white;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         border-radius: 8px;
+        overflow: hidden;
       }
       th, td {
         padding: 12px;
@@ -46,7 +47,7 @@
         background-color: #f8f9fa;
       }
       .btn {
-        padding: 6px 12px;
+        padding: 8px 16px;
         border: none;
         border-radius: 4px;
         cursor: pointer;
@@ -89,7 +90,7 @@
         width: 100%;
         height: 100%;
         background: rgba(255, 255, 255, 0.9);
-        display: flex;
+        display: none;
         justify-content: center;
         align-items: center;
         z-index: 1000;
@@ -107,11 +108,24 @@
         color: #2c3e50;
         margin-bottom: 10px;
       }
+      .filter-group {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .filter-label {
+        min-width: 60px;
+      }
+      
       @media screen and (max-width: 768px) {
         .filter-section {
-          display: flex;
+          padding: 15px;
+        }
+        .filter-group {
           flex-direction: column;
-          gap: 15px;
+          align-items: stretch;
+          gap: 10px;
         }
         .filter-select {
           width: 100%;
@@ -120,6 +134,10 @@
         .btn {
           width: 100%;
           margin: 5px 0;
+        }
+        th, td {
+          padding: 8px;
+          font-size: 14px;
         }
       }
     </style>
@@ -136,22 +154,22 @@
       
       <div class="filter-section">
         <h3>篩選條件</h3>
-        <div>
-          <label>買手：</label>
+        <div class="filter-group">
+          <div class="filter-label">買手：</div>
           <select id="buyerFilter" class="filter-select" onchange="applyFilters()">
             <option value="">全部</option>
           </select>
         </div>
         
-        <div>
-          <label>帳號：</label>
+        <div class="filter-group">
+          <div class="filter-label">帳號：</div>
           <select id="accountFilter" class="filter-select" onchange="applyFilters()">
             <option value="">全部</option>
           </select>
         </div>
         
-        <div>
-          <label>組別：</label>
+        <div class="filter-group">
+          <div class="filter-label">組別：</div>
           <select id="groupFilter" class="filter-select" onchange="applyFilters()">
             <option value="">全部</option>
           </select>
@@ -164,12 +182,66 @@
     <script>
       const CONFIG = {
         LIFF_ID: '1657285806-2bmkYWkN',
-        GAS_API_URL: 'https://script.google.com/macros/s/AKfycbz0fUAwE2uwu_xz7b1hULjAeipePFi81X-kGeIOYt0Sb2Tc6Zfvxdh8qAZUVtUC2x8LKA/exec'
+        GAS_API_URL: 'https://script.google.com/macros/s/AKfycbyBigEcZpFQ4xesMo6zJUjfs6fn6ttDRWJcr4ZnLOmdiuaxPj5Wk6PSMSIemQlV-aBhig/exec',
+        MAX_RETRIES: 3,
+        RETRY_DELAY: 1000
       };
 
       let dataStatus = {};
       let lineUserId = '';
       let originalData = [];
+
+      async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
+        try {
+          return await fetch(url, options);
+        } catch (err) {
+          if (retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
+            return fetchWithRetry(url, options, retries - 1);
+          }
+          throw err;
+        }
+      }
+
+      async function fetchGAS(action, data = {}) {
+        try {
+          const url = `${CONFIG.GAS_API_URL}?action=${action}`;
+          document.getElementById('loading').style.display = 'flex';
+          
+          const options = {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ 
+              ...data, 
+              lineUserId,
+              timestamp: new Date().getTime()
+            }),
+          };
+
+          const response = await fetchWithRetry(url, options);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const result = await response.json();
+          if (result.error) {
+            throw new Error(result.error);
+          }
+          return result;
+          
+        } catch (err) {
+          console.error('API 呼叫失敗:', err);
+          alert(`操作失敗：${err.message || '請稍後再試'}`);
+          throw err;
+        } finally {
+          document.getElementById('loading').style.display = 'none';
+        }
+      }
 
       async function initializeLiff() {
         try {
@@ -187,32 +259,9 @@
         }
       }
 
-      async function fetchGAS(action, data = {}) {
-        try {
-          const url = `${CONFIG.GAS_API_URL}?action=${action}`;
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ ...data, lineUserId }),
-          });
-          
-          const result = await response.json();
-          if (result.error) {
-            throw new Error(result.error);
-          }
-          return result;
-          
-        } catch (err) {
-          console.error('API 呼叫失敗:', err);
-          alert('操作失敗，請稍後再試：' + err.message);
-          throw err;
-        }
-      }
-
       async function loadData() {
         try {
+          document.getElementById('loading').style.display = 'flex';
           const result = await fetchGAS('getData');
           originalData = result.data;
           displayData(result.data);
