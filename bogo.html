@@ -10,59 +10,77 @@
       body {
         font-family: Arial, sans-serif;
         margin: 20px;
+        background-color: #f8f9fa;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 15px;
       }
       .filter-section {
         margin-bottom: 20px;
-        padding: 15px;
-        background-color: #f5f5f5;
-        border-radius: 5px;
+        padding: 20px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       }
       table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 20px;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 8px;
       }
       th, td {
-        padding: 10px;
-        border: 1px solid #ddd;
+        padding: 12px;
+        border: 1px solid #dee2e6;
         text-align: left;
       }
       th {
         background-color: #4CAF50;
         color: white;
+        font-weight: bold;
       }
       tr:nth-child(even) {
-        background-color: #f2f2f2;
+        background-color: #f8f9fa;
       }
       .btn {
-        padding: 5px 10px;
+        padding: 6px 12px;
         border: none;
-        border-radius: 3px;
+        border-radius: 4px;
         cursor: pointer;
         margin: 0 5px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      .btn:hover {
+        opacity: 0.9;
       }
       .confirm-btn {
-        background-color: #4CAF50;
+        background-color: #28a745;
         color: white;
       }
       .edit-btn {
-        background-color: #2196F3;
+        background-color: #007bff;
         color: white;
       }
       .save-btn {
-        background-color: #ff9800;
-        color: white;
+        background-color: #ffc107;
+        color: black;
       }
       .filter-select {
-        padding: 5px;
+        padding: 8px;
         margin: 0 10px;
         min-width: 150px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
       }
       .confirmed {
-        background-color: #dff0d8 !important;
+        background-color: #d4edda !important;
       }
       .modified {
-        background-color: #d9edf7 !important;
+        background-color: #cce5ff !important;
       }
       #loading {
         position: fixed;
@@ -70,7 +88,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.9);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -79,14 +97,27 @@
       .loading-text {
         font-size: 1.2em;
         color: #4CAF50;
+        font-weight: bold;
+      }
+      .header {
+        margin-bottom: 30px;
+        text-align: center;
+      }
+      .header h1 {
+        color: #2c3e50;
+        margin-bottom: 10px;
       }
       @media screen and (max-width: 768px) {
         .filter-section {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 15px;
         }
         .filter-select {
+          width: 100%;
+          margin: 5px 0;
+        }
+        .btn {
           width: 100%;
           margin: 5px 0;
         }
@@ -98,39 +129,48 @@
       <div class="loading-text">載入中...</div>
     </div>
 
-    <h1>搶購名單管理系統</h1>
-    
-    <div class="filter-section">
-      <h3>篩選條件</h3>
-      <label>買手：</label>
-      <select id="buyerFilter" class="filter-select" onchange="applyFilters()">
-        <option value="">全部</option>
-      </select>
+    <div class="container">
+      <div class="header">
+        <h1>搶購名單管理系統</h1>
+      </div>
       
-      <label>帳號：</label>
-      <select id="accountFilter" class="filter-select" onchange="applyFilters()">
-        <option value="">全部</option>
-      </select>
-      
-      <label>組別：</label>
-      <select id="groupFilter" class="filter-select" onchange="applyFilters()">
-        <option value="">全部</option>
-      </select>
-    </div>
+      <div class="filter-section">
+        <h3>篩選條件</h3>
+        <div>
+          <label>買手：</label>
+          <select id="buyerFilter" class="filter-select" onchange="applyFilters()">
+            <option value="">全部</option>
+          </select>
+        </div>
+        
+        <div>
+          <label>帳號：</label>
+          <select id="accountFilter" class="filter-select" onchange="applyFilters()">
+            <option value="">全部</option>
+          </select>
+        </div>
+        
+        <div>
+          <label>組別：</label>
+          <select id="groupFilter" class="filter-select" onchange="applyFilters()">
+            <option value="">全部</option>
+          </select>
+        </div>
+      </div>
 
-    <div id="dataTable"></div>
+      <div id="dataTable"></div>
+    </div>
 
     <script>
       const CONFIG = {
-          LIFF_ID: '1657285806-2bmkYWkN',
-          GAS_API_URL: 'https://script.google.com/macros/s/AKfycbyT3x5HoMVkAafcsC-LPJ4MGoM6kl6x36T12lq4prIUz60BIlRlUptZceQjvWGB8Cqq5g/exec'
+        LIFF_ID: '1657285806-2bmkYWkN',
+        GAS_API_URL: 'https://script.google.com/macros/s/AKfycbz0fUAwE2uwu_xz7b1hULjAeipePFi81X-kGeIOYt0Sb2Tc6Zfvxdh8qAZUVtUC2x8LKA/exec'
       };
 
-      // 儲存資料狀態
       let dataStatus = {};
       let lineUserId = '';
-      
-      // 初始化 LIFF
+      let originalData = [];
+
       async function initializeLiff() {
         try {
           await liff.init({ liffId: CONFIG.LIFF_ID });
@@ -139,7 +179,7 @@
           } else {
             const profile = await liff.getProfile();
             lineUserId = profile.userId;
-            loadData();
+            await loadData();
           }
         } catch (err) {
           console.error('LIFF 初始化失敗:', err);
@@ -147,26 +187,34 @@
         }
       }
 
-      // 使用 Fetch API 呼叫 GAS
       async function fetchGAS(action, data = {}) {
         try {
           const url = `${CONFIG.GAS_API_URL}?action=${action}`;
           const response = await fetch(url, {
             method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify({ ...data, lineUserId }),
           });
-          return await response.json();
+          
+          const result = await response.json();
+          if (result.error) {
+            throw new Error(result.error);
+          }
+          return result;
+          
         } catch (err) {
           console.error('API 呼叫失敗:', err);
-          alert('操作失敗，請稍後再試');
+          alert('操作失敗，請稍後再試：' + err.message);
           throw err;
         }
       }
-      
-      // 載入資料和下拉選單選項
+
       async function loadData() {
         try {
           const result = await fetchGAS('getData');
+          originalData = result.data;
           displayData(result.data);
           updateFilterOptions(result.data);
           const status = await fetchGAS('getStatus');
@@ -179,16 +227,15 @@
         }
       }
 
-      // 更新篩選選項
       function updateFilterOptions(data) {
         const buyers = new Set();
         const accounts = new Set();
         const groups = new Set();
         
         data.forEach(row => {
-          buyers.add(row[0]);
-          accounts.add(row[1]);
-          groups.add(row[2]);
+          if (row[0]) buyers.add(row[0]);
+          if (row[1]) accounts.add(row[1]);
+          if (row[2]) groups.add(row[2]);
         });
 
         updateSelect('buyerFilter', buyers);
@@ -196,7 +243,6 @@
         updateSelect('groupFilter', groups);
       }
 
-      // 更新下拉選單選項
       function updateSelect(id, options) {
         const select = document.getElementById(id);
         const currentValue = select.value;
@@ -215,92 +261,90 @@
         select.value = currentValue;
       }
 
-      // 顯示資料
       function displayData(data) {
         const tableDiv = document.getElementById('dataTable');
-        let html = '<table><tr><th>買手</th><th>帳號</th><th>組別</th><th>組數</th><th>操作</th></tr>';
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>買手</th>
+                <th>帳號</th>
+                <th>組別</th>
+                <th>組數</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
         
         data.forEach((row, index) => {
-          html += `<tr id="row-${index}">
-            <td>${row[0]}</td>
-            <td>${row[1]}</td>
-            <td>${row[2]}</td>
-            <td>${row[3]}</td>
-            <td>
-              <button class="btn confirm-btn" onclick="confirmRow(${index})">確認</button>
-              <button class="btn edit-btn" onclick="editRow(${index})">修改</button>
-            </td>
-          </tr>`;
+          html += `
+            <tr id="row-${index}">
+              <td>${row[0] || ''}</td>
+              <td>${row[1] || ''}</td>
+              <td>${row[2] || ''}</td>
+              <td>${row[3] || ''}</td>
+              <td>
+                <button class="btn confirm-btn" onclick="confirmRow(${index})">確認</button>
+                <button class="btn edit-btn" onclick="editRow(${index})">修改</button>
+              </td>
+            </tr>
+          `;
         });
         
-        html += '</table>';
+        html += '</tbody></table>';
         tableDiv.innerHTML = html;
         applyStatus();
       }
 
-      // 套用狀態樣式
       function applyStatus() {
         for (const [rowIndex, status] of Object.entries(dataStatus)) {
           const row = document.getElementById(`row-${rowIndex}`);
           if (row) {
-            if (status === 'confirmed') {
-              row.classList.add('confirmed');
-            } else if (status === 'modified') {
-              row.classList.add('modified');
-            }
+            row.className = status;
           }
         }
       }
 
-      // 篩選功能
       function applyFilters() {
         const buyer = document.getElementById('buyerFilter').value;
         const account = document.getElementById('accountFilter').value;
         const group = document.getElementById('groupFilter').value;
         
-        const rows = document.getElementsByTagName('tr');
+        const filteredData = originalData.filter(row => {
+          const buyerMatch = !buyer || row[0] === buyer;
+          const accountMatch = !account || row[1] === account;
+          const groupMatch = !group || row[2] === group;
+          return buyerMatch && accountMatch && groupMatch;
+        });
         
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const cells = row.getElementsByTagName('td');
-          
-          const buyerMatch = !buyer || cells[0].textContent === buyer;
-          const accountMatch = !account || cells[1].textContent === account;
-          const groupMatch = !group || cells[2].textContent === group;
-          
-          if (buyerMatch && accountMatch && groupMatch) {
-            row.style.display = '';
-          } else {
-            row.style.display = 'none';
-          }
-        }
+        displayData(filteredData);
       }
 
-      // 確認行
       async function confirmRow(index) {
         try {
+          document.getElementById('loading').style.display = 'flex';
           await fetchGAS('confirmRow', { rowIndex: index + 3 });
           const row = document.getElementById(`row-${index}`);
           row.className = 'confirmed';
           dataStatus[index] = 'confirmed';
         } catch (err) {
           console.error('確認失敗:', err);
+        } finally {
+          document.getElementById('loading').style.display = 'none';
         }
       }
 
-      // 修改行
       function editRow(index) {
         const row = document.getElementById(`row-${index}`);
         const cells = row.getElementsByTagName('td');
         
-        cells[2].innerHTML = `<input type="text" value="${cells[2].textContent}">`;
-        cells[3].innerHTML = `<input type="text" value="${cells[3].textContent}">`;
+        cells[2].innerHTML = `<input type="text" value="${cells[2].textContent}" class="filter-select">`;
+        cells[3].innerHTML = `<input type="number" value="${cells[3].textContent}" class="filter-select">`;
         
-        const btnCell = cells[4];
-        btnCell.innerHTML = `<button class="btn save-btn" onclick="saveRow(${index})">儲存</button>`;
+        cells[4].innerHTML = `<button class="btn save-btn" onclick="saveRow(${index})">儲存</button>`;
       }
 
-      // 儲存修改
       async function saveRow(index) {
         const row = document.getElementById(`row-${index}`);
         const cells = row.getElementsByTagName('td');
@@ -309,6 +353,7 @@
         const newCount = cells[3].getElementsByTagName('input')[0].value;
         
         try {
+          document.getElementById('loading').style.display = 'flex';
           await fetchGAS('updateData', {
             rowIndex: index + 3,
             newGroup,
@@ -327,13 +372,15 @@
           dataStatus[index] = 'modified';
           
           const result = await fetchGAS('getData');
+          originalData = result.data;
           updateFilterOptions(result.data);
         } catch (err) {
           console.error('儲存失敗:', err);
+        } finally {
+          document.getElementById('loading').style.display = 'none';
         }
       }
 
-      // 頁面載入時初始化 LIFF
       window.onload = initializeLiff;
     </script>
   </body>
