@@ -1,380 +1,161 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>搶購名單管理</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            color: white;
-        }
-        .clickable {
-            cursor: pointer;
-        }
-        .table-responsive {
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>搶購名單管理</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    input {
+      width: 80px;
+      padding: 5px;
+    }
+    button {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  </style>
 </head>
 <body>
-    <div id="loading" class="loading d-none">
-        <div class="spinner-border text-light" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-    </div>
+  <h1>搶購名單管理</h1>
+  <table id="purchaseTable">
+    <thead>
+      <tr>
+        <th>買家</th>
+        <th>帳號</th>
+        <th>群組</th>
+        <th>數量</th>
+        <th>確認群組</th>
+        <th>確認數量</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- 資料將動態插入 -->
+    </tbody>
+  </table>
+  <div id="message" class="message"></div>
 
-    <div class="container-fluid py-3">
-        <div class="row mb-3">
-            <div class="col">
-                <h2 class="h4">搶購名單管理</h2>
-            </div>
-        </div>
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQXLGaGPf-2Mmc5LyMs5hBAVXKjryCYl24AT525KIJNFPj-9K2SMJoie0JflTMR3DR/exec'; // 替換為您的 Google Apps Script 部署 URL
 
-        <div class="row mb-3">
-            <div class="col-md-3 mb-2">
-                <input type="text" id="searchInput" class="form-control" placeholder="搜尋...">
-            </div>
-            <div class="col-md-3 mb-2">
-                <select id="groupFilter" class="form-select">
-                    <option value="">所有組別</option>
-                </select>
-            </div>
-            <div class="col-md-3 mb-2">
-                <select id="statusFilter" class="form-select">
-                    <option value="">所有狀態</option>
-                    <option value="confirmed">已確認</option>
-                    <option value="unconfirmed">未確認</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>買手</th>
-                        <th>搶購帳號</th>
-                        <th>搶購組別</th>
-                        <th>數量</th>
-                        <th>確認狀態</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <tr>
-                        <td colspan="6" class="text-center">載入中...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- 編輯視窗 -->
-    <div class="modal fade" id="editModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">編輯資料</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editForm">
-                        <input type="hidden" id="editRowId">
-                        <div class="mb-3">
-                            <label class="form-label">搶購組別</label>
-                            <input type="text" class="form-control" id="editGroup">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">數量</label>
-                            <input type="number" class="form-control" id="editQuantity" min="1">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="saveEdit">儲存</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script>
-class App {
-  constructor() {
-    this.GAS_URL = 'https://script.google.com/macros/s/AKfycbwhoNwIscSa0zdIwYo7bieD4LCP8WVnuYwJo4ZCP754Los-K6nyYLQLytb5evu2cO7DMg/exec';
-    this.purchaseData = [];
-    this.filteredData = [];
-    this.editModal = null;
-    this.loading = document.getElementById('loading');
-    
-    this.initialize();
-  }
-
-  async initialize() {
-    try {
-      this.showLoading();
-      await this.initializeLiff();
-      await this.loadPurchaseData();
-      this.setupEventListeners();
-      this.hideLoading();
-    } catch (error) {
-      console.error('初始化錯誤:', error);
-      this.showError('初始化失敗: ' + error.message);
-      this.hideLoading();
-    }
-  }
-
-  async initializeLiff() {
-    try {
-      await liff.init({ liffId: '1657285806-2bmkYWkN' });
-      
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
+    // 獲取搶購名單資料
+    async function fetchPurchaseData() {
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=getPurchaseData`);
+        const result = await response.json();
+        if (result.success) {
+          renderTable(result.data);
+        } else {
+          showMessage(result.message, 'error');
+        }
+      } catch (error) {
+        showMessage('獲取資料失敗: ' + error.message, 'error');
       }
-
-      const profile = await liff.getProfile();
-      await this.sendProfileToGAS(profile);
-      
-    } catch (error) {
-      console.error('LIFF 初始化錯誤:', error);
-      throw error;
-    }
-  }
-
-  async sendProfileToGAS(profile) {
-    try {
-      const response = await fetch(`${this.GAS_URL}?action=saveProfile&data=${encodeURIComponent(JSON.stringify(profile))}`, {
-        method: 'GET',
-        mode: 'cors'
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || '未知錯誤');
-      }
-    } catch (error) {
-      console.error('儲存資料錯誤:', error);
-      throw error;
-    }
-  }
-
-  async loadPurchaseData() {
-    try {
-      const response = await fetch(`${this.GAS_URL}?action=getPurchaseData`, {
-        method: 'GET',
-        mode: 'cors'
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || '未知錯誤');
-      }
-
-      this.purchaseData = result.data;
-      this.filteredData = [...this.purchaseData];
-      
-      this.updateFilterOptions();
-      this.renderTable();
-      
-    } catch (error) {
-      console.error('載入搶購資料錯誤:', error);
-      this.showError(`載入搶購資料失敗: ${error.message}`);
-      this.tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">資料載入失敗</td></tr>';
-    }
-  }
-
-  setupEventListeners() {
-    // 搜尋和篩選
-    document.getElementById('searchInput').addEventListener('input', () => this.filterData());
-    document.getElementById('groupFilter').addEventListener('change', () => this.filterData());
-    document.getElementById('statusFilter').addEventListener('change', () => this.filterData());
-
-    // 編輯視窗
-    this.editModal = new bootstrap.Modal(document.getElementById('editModal'));
-    document.getElementById('saveEdit').addEventListener('click', () => this.saveEdit());
-  }
-
-  updateFilterOptions() {
-    const groups = [...new Set(this.purchaseData.map(item => item.group).filter(Boolean))];
-    const groupFilter = document.getElementById('groupFilter');
-    
-    groupFilter.innerHTML = '<option value="">所有組別</option>' +
-      groups.map(group => `<option value="${group}">${group}</option>`).join('');
-  }
-
-  filterData() {
-    const searchText = document.getElementById('searchInput').value.toLowerCase();
-    const groupFilter = document.getElementById('groupFilter').value;
-    const statusFilter = document.getElementById('statusFilter').value;
-
-    this.filteredData = this.purchaseData.filter(item => {
-      const matchSearch = !searchText ||
-        item.buyer.toLowerCase().includes(searchText) ||
-        item.account.toLowerCase().includes(searchText) ||
-        item.group.toLowerCase().includes(searchText);
-
-      const matchGroup = !groupFilter || item.group === groupFilter;
-
-      const isConfirmed = Boolean(item.confirmedGroup || item.confirmedQuantity);
-      const matchStatus = !statusFilter ||
-        (statusFilter === 'confirmed' && isConfirmed) ||
-        (statusFilter === 'unconfirmed' && !isConfirmed);
-
-      return matchSearch && matchGroup && matchStatus;
-    });
-
-    this.renderTable();
-  }
-
-  renderTable() {
-    const tableBody = document.getElementById('tableBody');
-    
-    if (this.filteredData.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="6" class="text-center">無符合條件的資料</td></tr>';
-      return;
     }
 
-    tableBody.innerHTML = this.filteredData.map(item => {
-      const isConfirmed = Boolean(item.confirmedGroup || item.confirmedQuantity);
-      const statusClass = isConfirmed ? 'text-success' : 'text-warning';
-      const statusText = isConfirmed ? '已確認' : '未確認';
-
-      return `
-        <tr>
+    // 渲染表格
+    function renderTable(data) {
+      const tbody = document.querySelector('#purchaseTable tbody');
+      tbody.innerHTML = data.map(item => `
+        <tr data-row-id="${item.rowId}">
           <td>${item.buyer}</td>
           <td>${item.account}</td>
-          <td>${item.group}</td>
-          <td>${item.quantity}</td>
-          <td class="${statusClass}">${statusText}</td>
+          <td><input type="text" value="${item.group}" id="group_${item.rowId}"></td>
+          <td><input type="text" value="${item.quantity}" id="quantity_${item.rowId}"></td>
+          <td>${item.confirmedGroup}</td>
+          <td>${item.confirmedQuantity}</td>
           <td>
-            <button class="btn btn-sm btn-primary me-1" onclick="app.openEditModal(${item.rowId})">
-              編輯
-            </button>
-            <button class="btn btn-sm btn-success" onclick="app.confirmData(${item.rowId})"
-              ${isConfirmed ? 'disabled' : ''}>
-              確認
-            </button>
+            <button onclick="updateRow(${item.rowId})">更新</button>
+            <button onclick="confirmRow(${item.rowId})">確認</button>
           </td>
         </tr>
-      `;
-    }).join('');
-  }
-
-  openEditModal(rowId) {
-    const item = this.purchaseData.find(item => item.rowId === rowId);
-    if (!item) return;
-
-    document.getElementById('editRowId').value = rowId;
-    document.getElementById('editGroup').value = item.group;
-    document.getElementById('editQuantity').value = item.quantity;
-
-    this.editModal.show();
-  }
-
-  async saveEdit() {
-    try {
-      this.showLoading();
-
-      const rowId = document.getElementById('editRowId').value;
-      const group = document.getElementById('editGroup').value;
-      const quantity = document.getElementById('editQuantity').value;
-
-      const response = await fetch(`${this.GAS_URL}?action=updatePurchaseData`, {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ rowId, group, quantity })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || '未知錯誤');
-      }
-
-      this.editModal.hide();
-      await this.loadPurchaseData();
-      
-    } catch (error) {
-      console.error('儲存編輯錯誤:', error);
-      this.showError(`儲存失敗: ${error.message}`);
-    } finally {
-      this.hideLoading();
+      `).join('');
     }
-  }
 
-  async confirmData(rowId) {
-    try {
-      this.showLoading();
+    // 更新資料
+    async function updateRow(rowId) {
+      const group = document.querySelector(`#group_${rowId}`).value;
+      const quantity = document.querySelector(`#quantity_${rowId}`).value;
 
-      const response = await fetch(`${this.GAS_URL}?action=confirmData&rowId=${rowId}`, {
-        method: 'GET',
-        mode: 'cors'
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=updatePurchaseData`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            rowId,
+            group,
+            quantity,
+          }),
+        });
+        const result = await response.json();
+        if (result.success) {
+          showMessage('更新成功', 'success');
+          fetchPurchaseData(); // 刷新資料
+        } else {
+          showMessage(result.message, 'error');
+        }
+      } catch (error) {
+        showMessage('更新失敗: ' + error.message, 'error');
       }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || '未知錯誤');
-      }
-
-      await this.loadPurchaseData();
-      
-    } catch (error) {
-      console.error('確認資料錯誤:', error);
-      this.showError(`確認失敗: ${error.message}`);
-    } finally {
-      this.hideLoading();
     }
-  }
 
-  showLoading() {
-    this.loading.classList.remove('d-none');
-  }
+    // 確認資料
+    async function confirmRow(rowId) {
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=confirmData&rowId=${rowId}`);
+        const result = await response.json();
+        if (result.success) {
+          showMessage('確認成功', 'success');
+          fetchPurchaseData(); // 刷新資料
+        } else {
+          showMessage(result.message, 'error');
+        }
+      } catch (error) {
+        showMessage('確認失敗: ' + error.message, 'error');
+      }
+    }
 
-  hideLoading() {
-    this.loading.classList.add('d-none');
-  }
+    // 顯示訊息
+    function showMessage(message, type) {
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = message;
+      messageDiv.className = `message ${type}`;
+    }
 
-  showError(message) {
-    alert(message);
-  }
-}
-
-// 初始化應用程式
-const app = new App();
-    </script>
+    // 初始化：載入資料
+    fetchPurchaseData();
+  </script>
 </body>
 </html>
