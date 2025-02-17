@@ -1,321 +1,160 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
+// 設定 CORS
+function doOptions(e) {
+  return ContentService
+    .createTextOutput()
+    .setMimeType(ContentService.MimeType.TEXT);
+}
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>搶購回報系統</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background-color: #f8f9fa;
-    }
+// 處理 GET 和 POST 請求
+function doGet(e) {
+  const action = e.parameter.action;
+  let result = { success: false, message: 'Invalid action' };
+  
+  switch(action) {
+    case 'getProducts':
+      result = getProducts();
+      break;
+    case 'getAccounts':
+      result = getAccounts();
+      break;
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
 
-    .container {
-      max-width: 600px;
-    }
+function doPost(e) {
+  const data = JSON.parse(e.postData.contents);
+  let result = { success: false, message: 'Invalid action' };
+  
+  if (data.action === 'submitReport') {
+    result = submitReport(data.data);
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
 
-    .card {
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-    }
-
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(255, 255, 255, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-
-    .info-display {
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-radius: 5px;
-    }
-
-    .info-display p {
-      margin-bottom: 0;
-    }
-  </style>
-  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-</head>
-
-<body>
-  <div class="container">
-    <div class="card my-4">
-      <div class="card-header bg-primary text-white">
-        <h2 class="text-center mb-0">搶購回報登記</h2>
-      </div>
-      <div class="card-body">
-        <form id="reportForm">
-          <!-- 使用者資訊 -->
-          <div class="mb-3">
-            <label class="form-label">使用者名稱</label>
-            <input type="text" class="form-control" id="userName" readonly>
-          </div>
-
-          <!-- 搶購帳號 -->
-          <div class="mb-3">
-            <label class="form-label">搶購帳號</label>
-            <select class="form-select" id="account" required>
-              <option value="">請選擇帳號</option>
-            </select>
-          </div>
-
-          <!-- 產品選擇 -->
-          <div class="mb-3">
-            <label class="form-label">產品</label>
-            <select class="form-select" id="product" required>
-              <option value="">請選擇產品</option>
-            </select>
-          </div>
-
-          <!-- 回報數量 -->
-          <div class="mb-3">
-            <label class="form-label">回報數量</label>
-            <input type="number" class="form-control" id="quantity" min="1" required>
-          </div>
-
-          <!-- 顯示資訊 -->
-          <div class="info-display mb-3">
-            <div class="row">
-              <div class="col-6">
-                <p>單價: <span id="priceDisplay">-</span></p>
-              </div>
-              <div class="col-6">
-                <p>PV: <span id="pvDisplay">-</span></p>
-              </div>
-            </div>
-          </div>
-
-          <!-- 提交按鈕 -->
-          <div class="text-center">
-            <button type="submit" class="btn btn-primary">送出回報</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="loading-overlay d-none">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-  </div>
-
-  <!-- Scripts -->
-  <script>
-    const CONFIG = {
-      LIFF_ID: '1657285806-2bmkYWkN', // 替換為你的 LIFF ID
-      API_URL: 'https://script.google.com/macros/s/AKfycbygP6YiLQ9xQ4Gd7G88HkSLK4FadkkuJTjbQh6Hoj_laDPGQdsKMJ-Ef7h5De7m-u9eHQ/exec', // 替換為你的 GAS 部署網址
-      VERSION: '1.0.0'
+// 獲取產品列表
+function getProducts() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('產品清單');
+    const data = sheet.getDataRange().getValues();
+    
+    // 移除標題行並格式化數據，過濾掉空行
+    const products = data.slice(1)
+      .filter(row => row[0]) // 確保產品名稱不為空
+      .map(row => ({
+        name: row[0],
+        price: row[1] || 0,
+        pv: row[2] || 0
+      }));
+    
+    return {
+      success: true,
+      data: products
     };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.toString()
+    };
+  }
+}
 
-    class API {
-      static async getProducts() {
-        try {
-          const response = await fetch(`${CONFIG.API_URL}?action=getProducts`);
-          const data = await response.json();
-          return data;
-        } catch (error) {
-          console.error('Error fetching products:', error);
-          throw error;
-        }
-      }
+// 獲取帳號列表
+function getAccounts() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('搶購名單登記');
+    const data = sheet.getRange('B3:C100').getValues(); // 只讀取編號和組別
+    
+    // 過濾有效資料並格式化
+    const accounts = data
+      .filter(row => row[0] && row[1]) // 確保編號和組別都不為空
+      .map(row => ({
+        account: row[0],    // 搶購登記編號
+        group: row[1]       // 組別代號
+      }));
+    
+    return {
+      success: true,
+      data: accounts
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.toString()
+    };
+  }
+}
 
-      static async getAccounts() {
-        try {
-          const response = await fetch(`${CONFIG.API_URL}?action=getAccounts`);
-          const data = await response.json();
-          return data;
-        } catch (error) {
-          console.error('Error fetching accounts:', error);
-          throw error;
-        }
-      }
-
-      static async submitReport(reportData) {
-        try {
-          const response = await fetch(CONFIG.API_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              action: 'submitReport',
-              data: reportData
-            })
-          });
-          const data = await response.json();
-          return data;
-        } catch (error) {
-          console.error('Error submitting report:', error);
-          throw error;
-        }
-      }
+// 提交回報
+// 提交回報
+function submitReport(data) {
+  try {
+    // 記錄收到的資料
+    Logger.log('Received data:', JSON.stringify(data));
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('搶購名單登記');
+    
+    if (!sheet) {
+      return {
+        success: false,
+        message: '找不到指定的工作表'
+      };
     }
+    
+    // 找到下一個空行
+    const lastRow = sheet.getLastRow();
+    Logger.log('Last row:', lastRow);
+    
+    // 準備寫入的資料（按照試算表欄位順序）
+    const reportData = [
+      new Date(),       // A列：時間戳記
+      data.account,     // B列：搶購登記編號
+      data.group,       // C列：組別代號
+      data.quantity,    // D列：搶購組數
+      data.userName,    // E列：搶購者
+      data.price,       // F列：單價
+      data.pv,         // G列：PV數
+      data.productName  // H列：產品名稱
+    ];
+    
+    Logger.log('Data to write:', reportData);
+    
+    // 寫入資料到新行（從A欄開始）
+    sheet.getRange(lastRow + 1, 1, 1, reportData.length).setValues([reportData]);
+    
+    return {
+      success: true,
+      message: '回報成功'
+    };
+  } catch (error) {
+    Logger.log('Error in submitReport:', error);
+    return {
+      success: false,
+      message: error.toString()
+    };
+  }
+}
 
-    class App {
-      constructor() {
-        this.userData = null;
-        this.products = [];
-        this.accounts = [];
-        this.initializeElements();
-        this.initializeEventListeners();
-      }
 
-      initializeElements() {
-        this.form = document.getElementById('reportForm');
-        this.userNameInput = document.getElementById('userName');
-        this.accountSelect = document.getElementById('account');
-        this.productSelect = document.getElementById('product');
-        this.quantityInput = document.getElementById('quantity');
-        this.priceDisplay = document.getElementById('priceDisplay');
-        this.pvDisplay = document.getElementById('pvDisplay');
-        this.loadingOverlay = document.getElementById('loadingOverlay');
-      }
 
-      initializeEventListeners() {
-        this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-        this.productSelect.addEventListener('change', () => this.updateProductInfo());
-      }
+function testSubmitReport() {
+  const testData = {
+    account: "TEST001",
+    group: "A",
+    quantity: 1,
+    userName: "測試用戶",
+    price: 100,
+    pv: 10,
+    productName: "測試產品"
+  };
+  
+  const result = submitReport(testData);
+  Logger.log(result);
+}
 
-      showLoading() {
-        this.loadingOverlay.classList.remove('d-none');
-      }
-
-      hideLoading() {
-        this.loadingOverlay.classList.add('d-none');
-      }
-
-      async initialize() {
-        try {
-          this.showLoading();
-          await this.initializeLiff();
-          await this.loadData();
-        } catch (error) {
-          console.error('Initialization error:', error);
-          alert('初始化失敗，請重新整理頁面');
-        } finally {
-          this.hideLoading();
-        }
-      }
-
-      async initializeLiff() {
-        try {
-          await liff.init({ liffId: CONFIG.LIFF_ID });
-          if (!liff.isLoggedIn()) {
-            liff.login();
-            return;
-          }
-          const profile = await liff.getProfile();
-          this.userData = profile;
-          this.userNameInput.value = profile.displayName;
-        } catch (error) {
-          console.error('LIFF initialization error:', error);
-          throw error;
-        }
-      }
-
-      async loadData() {
-        try {
-          const [productsResponse, accountsResponse] = await Promise.all([
-            API.getProducts(),
-            API.getAccounts()
-          ]);
-
-          if (productsResponse.success) {
-            this.products = productsResponse.data;
-          }
-          if (accountsResponse.success) {
-            this.accounts = accountsResponse.data;
-          }
-
-          this.populateSelects();
-        } catch (error) {
-          console.error('Data loading error:', error);
-          throw error;
-        }
-      }
-
-      populateSelects() {
-        // 清空現有選項
-        this.accountSelect.innerHTML = '<option value="">請選擇帳號</option>';
-        this.productSelect.innerHTML = '<option value="">請選擇產品</option>';
-
-        // 填充帳號選單
-        this.accounts.forEach(account => {
-          const option = document.createElement('option');
-          option.value = JSON.stringify(account);
-          option.textContent = `${account.account} (${account.group})`;
-          this.accountSelect.appendChild(option);
-        });
-
-        // 填充產品選單
-        this.products.forEach(product => {
-          const option = document.createElement('option');
-          option.value = JSON.stringify(product);
-          option.textContent = product.name;
-          this.productSelect.appendChild(option);
-        });
-      }
-
-      updateProductInfo() {
-        const selectedProduct = JSON.parse(this.productSelect.value || '{"price": "-", "pv": "-"}');
-        this.priceDisplay.textContent = selectedProduct.price;
-        this.pvDisplay.textContent = selectedProduct.pv;
-      }
-
-      async handleSubmit(e) {
-        e.preventDefault();
-        
-        try {
-          this.showLoading();
-
-          const accountData = JSON.parse(this.accountSelect.value);
-          const productData = JSON.parse(this.productSelect.value);
-          const quantity = parseInt(this.quantityInput.value);
-
-          const reportData = {
-            account: accountData.account,
-            group: accountData.group,
-            quantity: quantity,
-            userName: this.userData.displayName,
-            price: productData.price,
-            pv: productData.pv,
-            productName: productData.name
-          };
-
-          const result = await API.submitReport(reportData);
-
-          if (result.success) {
-            alert('回報成功！');
-            this.form.reset();
-            this.updateProductInfo();
-          } else {
-            alert(`回報失敗：${result.message}`);
-          }
-        } catch (error) {
-          console.error('Submit error:', error);
-          alert('系統錯誤，請稍後再試');
-        } finally {
-          this.hideLoading();
-        }
-      }
-    }
-
-    // 初始化應用
-    document.addEventListener('DOMContentLoaded', () => {
-      const app = new App();
-      app.initialize();
-    });
-  </script>
-</body>
-
-</html>
