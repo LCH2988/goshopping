@@ -16,6 +16,7 @@
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
         }
         .form-group {
             margin-bottom: 20px;
@@ -24,24 +25,25 @@
             color: #0d6efd;
             margin-bottom: 30px;
             text-align: center;
-        }
-        .price-info {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 20px;
-        }
-        #userInfo {
-            background-color: #e9ecef;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            font-size: 24px;
         }
         .user-profile-img {
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            margin-right: 10px;
+            object-fit: cover;
+        }
+        #userInfo {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
         }
     </style>
 </head>
@@ -50,102 +52,84 @@
         <h1>搶購回報登記</h1>
         
         <!-- 使用者資訊區塊 -->
-        <div id="userInfo" class="d-flex align-items-center">
-            <img id="userProfileImg" src="" alt="個人頭像" class="user-profile-img">
-            <div>
-                <div id="userName">載入中...</div>
-                <small id="userId" class="text-muted"></small>
+        <div id="userInfo">
+            <div class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
             </div>
         </div>
 
-        <div id="notAuthorized" style="display: none;" class="alert alert-danger">
-            很抱歉，您沒有使用權限。請聯繫管理員。
-        </div>
-
+        <!-- 表單區塊 -->
         <form id="purchaseForm" style="display: none;">
             <div class="form-group">
                 <label for="account">搶購帳號</label>
-                <select class="form-control" id="account" required>
-                    <option value="">請選擇帳號</option>
+                <select class="form-select" id="account" required>
+                    <option value="">請選擇搶購帳號</option>
+                    <!-- 選項將由 JavaScript 動態載入 -->
                 </select>
             </div>
+
             <div class="form-group">
-                <label for="product">產品</label>
-                <select class="form-control" id="product" required>
+                <label for="product">產品名稱</label>
+                <select class="form-select" id="product" required>
                     <option value="">請選擇產品</option>
+                    <!-- 選項將由 JavaScript 動態載入 -->
                 </select>
             </div>
+
             <div class="form-group">
-                <label for="quantity">回報數量</label>
-                <input type="number" class="form-control" id="quantity" required min="1">
+                <label for="quantity">數量</label>
+                <input type="number" class="form-control" id="quantity" required min="1" value="1">
             </div>
-            <div class="price-info">
-                <div class="row">
-                    <div class="col-6">
-                        <p>單價: <span id="unitPrice">-</span></p>
-                    </div>
-                    <div class="col-6">
-                        <p>PV: <span id="pv">-</span></p>
-                    </div>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary w-100 mt-3">送出回報</button>
+
+            <button type="submit" class="btn btn-primary w-100">送出回報</button>
         </form>
+
+        <!-- 錯誤訊息區塊 -->
+        <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
     </div>
 
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        // 設定 GAS 部署網址和 LIFF ID
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw28gsbGnO_8D5i-ZaYgWfAvXt-s8q4uSjqp7OOkKzs0jWYrgPry3X2hi-7o8IF69M3pQ/exec';
-        const LIFF_ID = '1657285806-2bmkYWkN';
-        
-        let userProfile = null;
+        // 設定常數
+        const LIFF_ID = '1657285806-2bmkYWkN'; // 請替換成你的 LIFF ID
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwseVMxewWBtQ17vm3SVFeprdAtnN4yh5uvG49mVvKI17sYNQZ2qzspM4srqGswzRYAqg/exec'; // 請替換成你的 GAS 部署網址
 
-        // 初始化 LIFF
+        // LIFF 初始化
         async function initializeLiff() {
             try {
                 await liff.init({ liffId: LIFF_ID });
                 
-                // 檢查是否在 LINE 環境中
                 if (!liff.isLoggedIn()) {
                     liff.login();
                     return;
                 }
 
-                // 獲取使用者資料
-                userProfile = await liff.getProfile();
-                
-                // 顯示使用者資訊
-                document.getElementById('userProfileImg').src = userProfile.pictureUrl;
-                document.getElementById('userName').textContent = userProfile.displayName;
-                document.getElementById('userId').textContent = userProfile.userId;
-
-                // 檢查使用權限
-                checkAuthorization(userProfile.userId);
+                const profile = await liff.getProfile();
+                displayUserInfo(profile);
+                document.getElementById('purchaseForm').style.display = 'block';
+                await loadInitialData();
 
             } catch (error) {
-                console.error('LIFF initialization failed', error);
-                alert('初始化失敗，請稍後再試');
+                console.error('LIFF initialization failed:', error);
+                showError('初始化失敗，請稍後再試');
             }
         }
 
-        // 檢查使用權限
-        async function checkAuthorization(userId) {
-            try {
-                const response = await fetch(`${SCRIPT_URL}?action=checkAuthorization&userId=${userId}`);
-                const data = await response.json();
-                
-                if (data.authorized) {
-                    document.getElementById('purchaseForm').style.display = 'block';
-                    loadInitialData();
-                } else {
-                    document.getElementById('notAuthorized').style.display = 'block';
-                }
-            } catch (error) {
-                console.error('Authorization check failed:', error);
-                alert('權限檢查失敗');
-            }
+        // 顯示使用者資訊
+        function displayUserInfo(profile) {
+            const userInfoDiv = document.getElementById('userInfo');
+            userInfoDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <img src="${profile.pictureUrl}" alt="個人頭像" class="user-profile-img me-3">
+                    <div>
+                        <div class="fw-bold">${profile.displayName}</div>
+                        <small class="text-muted">${profile.userId}</small>
+                    </div>
+                </div>
+            `;
         }
 
         // 載入初始資料
@@ -154,54 +138,61 @@
                 const response = await fetch(`${SCRIPT_URL}?action=getInitialData`);
                 const data = await response.json();
                 
-                const accountSelect = document.getElementById('account');
-                data.accounts.forEach(account => {
-                    const option = document.createElement('option');
-                    option.value = account;
-                    option.textContent = account;
-                    accountSelect.appendChild(option);
-                });
+                if (data.success) {
+                    // 載入帳號選項
+                    const accountSelect = document.getElementById('account');
+                    data.accounts.forEach(account => {
+                        const option = document.createElement('option');
+                        option.value = account;
+                        option.textContent = account;
+                        accountSelect.appendChild(option);
+                    });
 
-                const productSelect = document.getElementById('product');
-                data.products.forEach(product => {
-                    const option = document.createElement('option');
-                    option.value = product.name;
-                    option.textContent = product.name;
-                    productSelect.appendChild(option);
-                });
+                    // 載入產品選項
+                    const productSelect = document.getElementById('product');
+                    data.products.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product;
+                        option.textContent = product;
+                        productSelect.appendChild(option);
+                    });
+                } else {
+                    showError('載入資料失敗：' + data.message);
+                }
             } catch (error) {
                 console.error('Error loading initial data:', error);
-                alert('載入資料時發生錯誤');
+                showError('載入資料時發生錯誤');
             }
         }
 
-        // 當選擇產品時更新價格和 PV
-        document.getElementById('product').addEventListener('change', async (e) => {
-            try {
-                const response = await fetch(`${SCRIPT_URL}?action=getProductInfo&product=${e.target.value}`);
-                const data = await response.json();
-                
-                document.getElementById('unitPrice').textContent = data.price;
-                document.getElementById('pv').textContent = data.pv;
-            } catch (error) {
-                console.error('Error loading product info:', error);
-                alert('載入產品資訊時發生錯誤');
-            }
-        });
+        // 顯示錯誤訊息
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
 
-        // 表單提交
+        // 表單提交處理
         document.getElementById('purchaseForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const formData = {
-                userId: userProfile.userId,
-                userName: userProfile.displayName,
-                account: document.getElementById('account').value,
-                product: document.getElementById('product').value,
-                quantity: document.getElementById('quantity').value
-            };
-
             try {
+                const profile = await liff.getProfile();
+                const formData = {
+                    userId: profile.userId,
+                    userName: profile.displayName,
+                    account: document.getElementById('account').value,
+                    product: document.getElementById('product').value,
+                    quantity: document.getElementById('quantity').value
+                };
+
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 提交中...';
+
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(formData)
@@ -212,21 +203,24 @@
                     alert('回報成功！');
                     document.getElementById('purchaseForm').reset();
                     
-                    // 如果在 LINE 中，可以關閉視窗
                     if (liff.isInClient()) {
                         liff.closeWindow();
                     }
                 } else {
-                    alert('回報失敗：' + result.message);
+                    showError('回報失敗：' + result.message);
                 }
             } catch (error) {
                 console.error('Error submitting form:', error);
-                alert('提交表單時發生錯誤');
+                showError('提交表單時發生錯誤');
+            } finally {
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                submitButton.disabled = false;
+                submitButton.innerHTML = '送出回報';
             }
         });
 
-        // 當頁面載入時初始化 LIFF
-        document.addEventListener('DOMContentLoaded', initializeLiff);
+        // 初始化
+        initializeLiff();
     </script>
 </body>
 </html>
