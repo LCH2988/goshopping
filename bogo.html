@@ -54,6 +54,9 @@
       border-radius: 4px;
       background-color: white;
     }
+    .table-container {
+      overflow-x: auto;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -115,9 +118,6 @@
       justify-content: center;
       align-items: center;
       z-index: 1000;
-      font-size: 1.2em;
-      font-weight: bold;
-      color: #4CAF50;
     }
     .input-field {
       padding: 6px;
@@ -126,17 +126,18 @@
       width: 100%;
       box-sizing: border-box;
     }
-    .table-container {
-      overflow-x: auto;
-      margin-top: 20px;
+    .error-message {
+      color: #dc3545;
+      padding: 10px;
+      margin: 10px 0;
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      border-radius: 4px;
+      display: none;
     }
     @media (max-width: 768px) {
       .container {
         padding: 10px;
-      }
-      .filters {
-        grid-template-columns: 1fr;
-        gap: 10px;
       }
       th, td {
         padding: 8px;
@@ -151,14 +152,14 @@
   </style>
 </head>
 <body>
-  <div class="loading" id="loading">
-    <div>載入中...</div>
-  </div>
+  <div class="loading" id="loading">載入中...</div>
   
   <div class="container">
     <div class="header">
       <h1>搶購名單管理系統</h1>
     </div>
+    
+    <div class="error-message" id="errorMessage"></div>
 
     <div class="filters">
       <div class="filter-group">
@@ -181,18 +182,30 @@
       </div>
     </div>
 
-    <div class="table-container" id="dataTable"></div>
+    <div class="table-container">
+      <div id="dataTable"></div>
+    </div>
   </div>
 
   <script>
     // 設定
     const config = {
-      SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbx1Z6m_9gOEivDzqfjBcKQK3tB036ez2VZonOagTOQxfIRjHLcm9wVqsPfyXzl_CK-h/exec',
-      LIFF_ID: '1657285806-2bmkYWkN'
+      SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxaUiydPLO0MWUxxlRtVbTiIlOdX8mdmxxuRnWL5BLg1mjnrSe52V4JaOSfJWpxZhDnBA/exec', // 替換為你的 Apps Script 網址
+      LIFF_ID: '1657285806-2bmkYWkN'                 // 替換為你的 LIFF ID
     };
 
     let userData = null;
     let allData = [];
+
+    // 顯示錯誤訊息
+    function showError(message) {
+      const errorDiv = document.getElementById('errorMessage');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      setTimeout(() => {
+        errorDiv.style.display = 'none';
+      }, 5000);
+    }
 
     // 初始化 LIFF
     async function initializeLiff() {
@@ -207,7 +220,7 @@
         }
       } catch (err) {
         console.error('LIFF initialization failed', err);
-        alert('初始化失敗，請重新整理頁面');
+        showError('初始化失敗，請重新整理頁面');
       }
     }
 
@@ -215,7 +228,18 @@
     async function loadData() {
       showLoading(true);
       try {
-        const response = await fetch(`${config.SCRIPT_URL}?action=getData`);
+        const response = await fetch(`${config.SCRIPT_URL}?action=getData`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({})
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
         
         if (result.success) {
@@ -223,11 +247,11 @@
           updateFilterOptions(result.data);
           displayData(result.data);
         } else {
-          throw new Error(result.error);
+          throw new Error(result.error || '載入資料失敗');
         }
       } catch (err) {
         console.error('Failed to load data', err);
-        alert('載入資料失敗');
+        showError('載入資料失敗：' + err.message);
       } finally {
         showLoading(false);
       }
@@ -286,7 +310,7 @@
 
     // 顯示資料
     function displayData(data) {
-      const table = `
+      const tableHtml = `
         <table>
           <thead>
             <tr>
@@ -314,7 +338,7 @@
         </table>
       `;
       
-      document.getElementById('dataTable').innerHTML = table;
+      document.getElementById('dataTable').innerHTML = data.length ? tableHtml : '<p>無資料</p>';
     }
 
     // 確認行
@@ -333,17 +357,18 @@
         if (result.success) {
           const row = document.getElementById(`row-${rowIndex}`);
           row.className = 'confirmed';
+          
           // 更新本地數據
           const dataIndex = allData.findIndex(item => item.rowIndex === rowIndex);
           if (dataIndex !== -1) {
             allData[dataIndex].status = 'confirmed';
           }
         } else {
-          throw new Error(result.error);
+          throw new Error(result.error || '確認失敗');
         }
       } catch (err) {
         console.error('Failed to confirm row', err);
-        alert('確認失敗');
+        showError('確認失敗：' + err.message);
       } finally {
         showLoading(false);
       }
@@ -371,7 +396,7 @@
       const count = cells[3].getElementsByTagName('input')[0].value;
       
       if (!group || !count) {
-        alert('組別和組數不能為空');
+        showError('組別和組數不能為空');
         return;
       }
 
@@ -406,11 +431,11 @@
           // 更新篩選選項
           updateFilterOptions(allData);
         } else {
-          throw new Error(result.error);
+          throw new Error(result.error || '儲存失敗');
         }
       } catch (err) {
         console.error('Failed to save row', err);
-        alert('儲存失敗');
+        showError('儲存失敗：' + err.message);
       } finally {
         showLoading(false);
       }
@@ -420,13 +445,6 @@
     function showLoading(show) {
       document.getElementById('loading').style.display = show ? 'flex' : 'none';
     }
-
-    // 錯誤處理
-    window.onerror = function(msg, url, line, col, error) {
-      console.error('An error occurred:', { msg, url, line, col, error });
-      alert('發生錯誤，請重新整理頁面');
-      return false;
-    };
 
     // 初始化
     window.onload = initializeLiff;
