@@ -514,7 +514,7 @@
     
     <div class="content">
         <!-- 設定區塊 -->
-        <!-- <div class="config-section">
+        <div class="config-section">
             <h3>⚙️ 系統設定</h3>
             <input type="text" id="gasWebAppUrl" class="config-input" 
                    placeholder="請輸入 Google Apps Script Web App URL">
@@ -523,7 +523,7 @@
             <button class="config-button" onclick="saveConfig()">💾 儲存設定</button>
             <button class="config-button" onclick="testConnection()">🔗 測試連線</button>
             <div id="connectionStatus"></div>
-        </div> -->
+        </div>
         
         <!-- 會員資料設定 -->
         <div id="memberSetupSection" class="config-section" style="display: none;">
@@ -588,8 +588,8 @@
     // 全域變數
     let liffInitialized = false;
     let currentUser = null;
-    const gasWebAppUrl = 'https://script.google.com/macros/s/AKfycbwJMzFgddDLXejWkyo-9j7LwQmdagN4ucTHoKjYshwgn9V6ZD93lnrksYRKWoo_ygPD/exec';
-    const liffId = '1657285806-2bmkYWkN';
+    const gasWebAppUrl = '';
+    const liffId = '';
     let userRole = 'member'; // member 或 admin
     let groupInfo = null;
     
@@ -602,20 +602,20 @@
         initializeLiff();
     });
     
-    // // 載入設定
-    // function loadConfig() {
-    //     try {
-    //         gasWebAppUrl = localStorage.getItem('gasWebAppUrl') || '';
-    //         liffId = localStorage.getItem('liffId') || '';
+    // 載入設定
+    function loadConfig() {
+        try {
+            gasWebAppUrl = localStorage.getItem('gasWebAppUrl') || '';
+            liffId = localStorage.getItem('liffId') || '';
             
-    //         document.getElementById('gasWebAppUrl').value = gasWebAppUrl;
-    //         document.getElementById('liffId').value = liffId;
+            document.getElementById('gasWebAppUrl').value = gasWebAppUrl;
+            document.getElementById('liffId').value = liffId;
             
-    //         updateConnectionStatus();
-    //     } catch (error) {
-    //         console.error('載入設定失敗:', error);
-    //     }
-    // }
+            updateConnectionStatus();
+        } catch (error) {
+            console.error('載入設定失敗:', error);
+        }
+    }
     
     // 儲存設定
     function saveConfig() {
