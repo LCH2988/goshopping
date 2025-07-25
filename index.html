@@ -578,13 +578,15 @@
 </div>
 
 <script>
-    // 全域變數
+    const FIXED_GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw20RZEnTJup76thVbtnWcOprxqGyWkAletGWlCU6QOFf4oE15Fz9U4bZYg68h4_CBW/exec';
+    const FIXED_LIFF_ID = '1657285806-2bmkYWkN';
+    let gasWebAppUrl = FIXED_GAS_WEB_APP_URL;
+    let liffId = FIXED_LIFF_ID;
     let liffInitialized = false;
     let currentUser = null;
-    let gasWebAppUrl = '';
-    let liffId = '';
-    let userRole = 'member'; // member 或 admin
+    let userRole = 'member';
     let groupInfo = null;
+
     
     // 管理者名單 (請根據實際需要修改)
     const adminUsers = ['小劉（彤彤爸）', 'U47d2577a751e274ed113028beab304b7', '管理員名稱2']; 
