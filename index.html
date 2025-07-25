@@ -395,12 +395,6 @@
         border: 1px solid #f5c6cb;
     }
     
-    .status-testing {
-        background: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeaa7;
-    }
-    
     .search-section {
         background: #f8f9fa;
         border-radius: 10px;
@@ -519,9 +513,8 @@
             <input type="text" id="gasWebAppUrl" class="config-input" 
                    placeholder="請輸入 Google Apps Script Web App URL">
             <input type="text" id="liffId" class="config-input" 
-                   placeholder="請輸入 LIFF ID (選填，測試時可留空)">
+                   placeholder="請輸入 LIFF ID">
             <button class="config-button" onclick="saveConfig()">💾 儲存設定</button>
-            <button class="config-button" onclick="testConnection()">🔗 測試連線</button>
             <div id="connectionStatus"></div>
         </div>
         
@@ -588,13 +581,13 @@
     // 全域變數
     let liffInitialized = false;
     let currentUser = null;
-    const gasWebAppUrl = '';
-    const liffId = '';
+    let gasWebAppUrl = '';
+    let liffId = '';
     let userRole = 'member'; // member 或 admin
     let groupInfo = null;
     
-    // 管理者名單 (可從後端設定檔載入)
-    const adminUsers = ['小劉（彤彤爸）', 'U47d2577a751e274ed113028beab304b7', '系統管理員']; // 可根據需要調整
+    // 管理者名單 (請根據實際需要修改)
+    const adminUsers = ['小劉（彤彤爸）', 'U47d2577a751e274ed113028beab304b7', '管理員名稱2']; 
     
     // 頁面載入時初始化
     document.addEventListener('DOMContentLoaded', function() {
@@ -628,11 +621,19 @@
                 return;
             }
             
+            if (!liffId) {
+                showMessage('請輸入 LIFF ID', 'error');
+                return;
+            }
+            
             localStorage.setItem('gasWebAppUrl', gasWebAppUrl);
             localStorage.setItem('liffId', liffId);
             
             updateConnectionStatus();
             showMessage('✅ 設定已儲存！', 'success');
+            
+            // 重新初始化 LIFF
+            initializeLiff();
             
         } catch (error) {
             console.error('儲存設定失敗:', error);
@@ -640,41 +641,12 @@
         }
     }
     
-    // 測試連線
-    async function testConnection() {
-        if (!gasWebAppUrl) {
-            showMessage('請先輸入並儲存 Google Apps Script Web App URL', 'error');
-            return;
-        }
-        
-        try {
-            showConnectionStatus('🔄 測試連線中...', 'testing');
-            
-            const response = await fetch(gasWebAppUrl + '?action=test&timestamp=' + Date.now(), {
-                method: 'GET',
-                mode: 'cors'
-            });
-            
-            if (response.ok) {
-                showConnectionStatus('✅ 連線成功！', 'connected');
-                showMessage('🎉 與後端連線成功！', 'success');
-            } else {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-        } catch (error) {
-            console.error('連線測試失敗:', error);
-            showConnectionStatus('❌ 連線失敗', 'disconnected');
-            showMessage('❌ 連線測試失敗: ' + error.message, 'error');
-        }
-    }
-    
     // 更新連線狀態顯示
     function updateConnectionStatus() {
-        if (gasWebAppUrl) {
-            showConnectionStatus('⚡ 已設定後端 URL', 'connected');
+        if (gasWebAppUrl && liffId) {
+            showConnectionStatus('✅ 設定完成', 'connected');
         } else {
-            showConnectionStatus('⚠️ 尚未設定後端 URL', 'disconnected');
+            showConnectionStatus('⚠️ 請完成設定', 'disconnected');
         }
     }
     
@@ -689,26 +661,12 @@
     
     // LIFF 初始化
     async function initializeLiff() {
+        if (!liffId) {
+            showMessage('請先設定 LIFF ID', 'warning');
+            return;
+        }
+        
         try {
-            if (!liffId) {
-                // 測試模式
-                console.log('使用測試模式 (未設定 LIFF ID)');
-                currentUser = {
-                    displayName: '測試管理員',
-                    userId: 'test_admin_' + Date.now()
-                };
-                groupInfo = {
-                    groupName: '測試群組',
-                    groupId: 'test_group_123'
-                };
-                
-                checkUserRole();
-                updateUserInfo();
-                showMemberSetup();
-                liffInitialized = true;
-                return;
-            }
-            
             await liff.init({ liffId: liffId });
             
             if (!liff.isLoggedIn()) {
@@ -727,7 +685,7 @@
                 const context = liff.getContext();
                 if (context && context.type === 'group') {
                     groupInfo = {
-                        groupName: '群組', // LIFF 無法直接獲取群組名稱
+                        groupName: '群組',
                         groupId: context.groupId
                     };
                 } else {
@@ -751,26 +709,13 @@
             
         } catch (error) {
             console.error('LIFF 初始化失敗:', error);
-            // 降級到測試模式
-            currentUser = {
-                displayName: '訪客用戶',
-                userId: 'guest_' + Date.now()
-            };
-            groupInfo = {
-                groupName: '測試群組',
-                groupId: 'guest_group'
-            };
-            
-            checkUserRole();
-            updateUserInfo();
-            showMemberSetup();
-            liffInitialized = true;
+            showMessage('❌ LIFF 初始化失敗: ' + error.message, 'error');
         }
     }
     
     // 檢查用戶角色
     function checkUserRole() {
-        if (currentUser && adminUsers.includes(currentUser.displayName)) {
+        if (currentUser && (adminUsers.includes(currentUser.displayName) || adminUsers.includes(currentUser.userId))) {
             userRole = 'admin';
             document.getElementById('adminTabBtn').classList.remove('hidden');
         } else {
@@ -844,7 +789,7 @@
     async function loadUserOrders() {
         if (!gasWebAppUrl || !liffInitialized || !currentUser) {
             document.getElementById('ordersList').innerHTML = 
-                '<div class="alert alert-error">❌ 系統尚未初始化完成</div>';
+                '<div class="alert alert-error">❌ 系統尚未初始化完成，請確認設定</div>';
             return;
         }
         
@@ -959,341 +904,341 @@
                           <span class="payment-status ${statusClass}">${statusText}</span>
                       </h4>
                       <p>🔢 數量: ${order.quantity || 1}</p>
-                      <p>💰 單價: $${order.unitPrice || 0}</p>
-                      <p>💳 小計: $${(order.quantity || 1) * (order.unitPrice || 0)}</p>
-                      <p>📅 日期: ${formatDate(order.orderDate)}</p>
-                      ${order.paymentMethod ? `<p>💳 繳費方式: ${order.paymentMethod}</p>` : ''}
-                      ${order.paymentNote ? `<p>📝 備註: ${order.paymentNote}</p>` : ''}
-                      
-                      ${paymentStatus === 'unpaid' ? `
-                          <div class="payment-form" id="paymentForm_${index}">
-                              <h5>💳 回報繳費</h5>
-                              <div class="payment-methods">
-                                  <div class="payment-method" onclick="selectPaymentMethod(${index}, 'cash')">💵 現金</div>
-                                  <div class="payment-method" onclick="selectPaymentMethod(${index}, 'transfer')">🏦 轉帳</div>
-                                  <div class="payment-method" onclick="selectPaymentMethod(${index}, 'linepay')">📱 LinePay</div>
-                              </div>
-                              <div class="form-group">
-                                  <textarea id="paymentNote_${index}" placeholder="備註 (轉帳請提供後5碼)" rows="2"></textarea>
-                              </div>
-                              <button class="btn btn-primary" onclick="reportPayment('${order.orderId}', ${index})">
-                                  ✅ 回報繳費
-                              </button>
-                          </div>
-                      ` : ''}
-                  </div>
-              `;
-          }).join('');
-          
-          listContainer.innerHTML = orderHtml;
-      }
-      
-      // 選擇繳費方式
-      function selectPaymentMethod(orderIndex, method) {
-          const form = document.getElementById(`paymentForm_${orderIndex}`);
-          const methods = form.querySelectorAll('.payment-method');
-          
-          methods.forEach(m => m.classList.remove('selected'));
-          event.target.classList.add('selected');
-          
-          // 儲存選擇的方式
-          form.setAttribute('data-payment-method', method);
-          
-          // 如果是轉帳，自動聚焦到備註欄
-          if (method === 'transfer') {
-              document.getElementById(`paymentNote_${orderIndex}`).focus();
-          }
-      }
-      
-      // 回報繳費
-      async function reportPayment(orderId, orderIndex) {
-          const form = document.getElementById(`paymentForm_${orderIndex}`);
-          const paymentMethod = form.getAttribute('data-payment-method');
-          const paymentNote = document.getElementById(`paymentNote_${orderIndex}`).value.trim();
-          
-          if (!paymentMethod) {
-              showMessage('請選擇繳費方式', 'error');
-              return;
-          }
-          
-          if (paymentMethod === 'transfer' && !paymentNote) {
-              showMessage('轉帳請提供後5碼或相關資訊', 'error');
-              return;
-          }
-          
-          try {
-              const response = await fetch(gasWebAppUrl, {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                      action: 'reportPayment',
-                      data: {
-                          orderId: orderId,
-                          paymentMethod: paymentMethod,
-                          paymentNote: paymentNote,
-                          reportedBy: currentUser.displayName,
-                          reportedAt: new Date().toISOString()
-                      }
-                  })
-              });
-              
-              const result = await response.json();
-              
-              if (result.success) {
-                  showMessage('✅ 繳費回報成功！等待管理員確認', 'success');
-                  setTimeout(() => loadUserOrders(), 1000);
-              } else {
-                  throw new Error(result.message || '回報失敗');
-              }
-              
-          } catch (error) {
-              console.error('回報繳費失敗:', error);
-              showMessage('❌ 回報失敗: ' + error.message, 'error');
-          }
-      }
-      
-      // 載入管理者資料
-      async function loadAdminData() {
-          if (userRole !== 'admin') {
-              document.getElementById('membersList').innerHTML = 
-                  '<div class="alert alert-error">❌ 您沒有管理員權限</div>';
-              return;
-          }
-          
-          try {
-              document.getElementById('membersList').innerHTML = `
-                  <div class="loading">
-                      <div class="spinner"></div>
-                      載入會員資料中...
-                  </div>
-              `;
-              
-              const url = `${gasWebAppUrl}?action=getAllMembersWithOrders&timestamp=${Date.now()}`;
-              
-              const response = await fetch(url, {
-                  method: 'GET',
-                  mode: 'cors'
-              });
-              
-              if (!response.ok) {
-                  throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-              }
-              
-              const result = await response.json();
-              
-              if (result.success) {
-                  displayMembersList(result.data || []);
-              } else {
-                  throw new Error(result.message || '載入失敗');
-              }
-              
-          } catch (error) {
-              console.error('載入會員資料失敗:', error);
-              document.getElementById('membersList').innerHTML = 
-                  `<div class="alert alert-error">❌ 載入失敗: ${error.message}</div>`;
-          }
-      }
-      
-      // 顯示會員列表
-      function displayMembersList(members) {
-          const statsContainer = document.getElementById('adminStats');
-          const listContainer = document.getElementById('membersList');
-          
-          if (!members || members.length === 0) {
-              listContainer.innerHTML = 
-                  '<div class="alert alert-info">📝 暫無會員資料</div>';
-              statsContainer.style.display = 'none';
-              return;
-          }
-          
-          // 計算統計資料
-          const totalMembers = members.length;
-          const pendingPayments = members.reduce((count, member) => {
-              return count + (member.orders || []).filter(order => order.paymentStatus === 'reported').length;
-          }, 0);
-          
-          document.getElementById('totalMembers').textContent = totalMembers;
-          document.getElementById('pendingPayments').textContent = pendingPayments;
-          statsContainer.style.display = 'grid';
-          
-          // 顯示會員列表
-          const memberHtml = members.map(member => {
-              const orders = member.orders || [];
-              const totalAmount = orders.reduce((sum, order) => sum + ((order.quantity || 1) * (order.unitPrice || 0)), 0);
-              const reportedOrders = orders.filter(order => order.paymentStatus === 'reported');
-              
-              return `
-                  <div class="member-item" onclick="toggleMemberDetails('${member.lineUserId}')">
-                      <h5>${member.realName || member.displayName} 
-                          ${reportedOrders.length > 0 ? `<span class="payment-status status-reported">${reportedOrders.length} 筆待確認</span>` : ''}
-                      </h5>
-                      <p>📱 LINE: ${member.displayName}</p>
-                      <p>📦 訂單數: ${orders.length} 筆</p>
-                      <p>💰 總金額: $${totalAmount}</p>
-                      
-                      <div id="memberDetails_${member.lineUserId}" class="hidden" style="margin-top: 15px;">
-                          ${orders.map(order => `
-                              <div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 3px solid ${order.paymentStatus === 'reported' ? '#ffc107' : order.paymentStatus === 'confirmed' ? '#28a745' : '#dc3545'};">
-                                  <strong>${order.productId}</strong> - 數量: ${order.quantity} - $${(order.quantity || 1) * (order.unitPrice || 0)}
-                                  <br>狀態: ${order.paymentStatus === 'confirmed' ? '已確認' : order.paymentStatus === 'reported' ? '已回報' : '未繳費'}
-                                  ${order.paymentMethod ? `<br>繳費方式: ${order.paymentMethod}` : ''}
-                                  ${order.paymentNote ? `<br>備註: ${order.paymentNote}` : ''}
-                                  
-                                  ${order.paymentStatus === 'reported' ? `
-                                      <div class="admin-actions">
-                                          <button class="admin-btn admin-btn-confirm" onclick="confirmPayment('${order.orderId}', event)">
-                                              ✅ 確認繳費
-                                          </button>
-                                          <button class="admin-btn admin-btn-reject" onclick="rejectPayment('${order.orderId}', event)">
-                                              ❌ 駁回
-                                          </button>
-                                      </div>
-                                  ` : ''}
-                              </div>
-                          `).join('')}
-                      </div>
-                  </div>
-              `;
-          }).join('');
-          
-          listContainer.innerHTML = memberHtml;
-      }
-      
-      // 切換會員詳細資料顯示
-      function toggleMemberDetails(lineUserId) {
-          const details = document.getElementById(`memberDetails_${lineUserId}`);
-          if (details) {
-              details.classList.toggle('hidden');
-          }
-      }
-      
-      // 搜尋會員
-      function searchMembers() {
-          const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
-          
-          if (!searchTerm) {
-              loadAdminData();
-              return;
-          }
-          
-          const memberItems = document.querySelectorAll('.member-item');
-          memberItems.forEach(item => {
-              const memberName = item.querySelector('h5').textContent.toLowerCase();
-              if (memberName.includes(searchTerm)) {
-                  item.style.display = 'block';
-              } else {
-                  item.style.display = 'none';
-              }
-          });
-      }
-      
-      // 確認繳費
-      async function confirmPayment(orderId, event) {
-          event.stopPropagation();
-          
-          if (!confirm('確定要確認此筆繳費嗎？')) {
-              return;
-          }
-          
-          try {
-              const response = await fetch(gasWebAppUrl, {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                      action: 'confirmPayment',
-                      data: {
-                          orderId: orderId,
-                          confirmedBy: currentUser.displayName,
-                          confirmedAt: new Date().toISOString()
-                      }
-                  })
-              });
-              
-              const result = await response.json();
-              
-              if (result.success) {
-                  showMessage('✅ 繳費已確認！', 'success');
-                  setTimeout(() => loadAdminData(), 1000);
-              } else {
-                  throw new Error(result.message || '確認失敗');
-              }
-              
-          } catch (error) {
-              console.error('確認繳費失敗:', error);
-              showMessage('❌ 確認失敗: ' + error.message, 'error');
-          }
-      }
-      
-      // 駁回繳費
-      async function rejectPayment(orderId, event) {
-          event.stopPropagation();
-          
-          const reason = prompt('請輸入駁回原因：');
-          if (!reason) {
-              return;
-          }
-          
-          try {
-              const response = await fetch(gasWebAppUrl, {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                      action: 'rejectPayment',
-                      data: {
-                          orderId: orderId,
-                          rejectedBy: currentUser.displayName,
-                          rejectedAt: new Date().toISOString(),
-                          rejectionReason: reason
-                      }
-                  })
-              });
-              
-              const result = await response.json();
-              
-              if (result.success) {
-                  showMessage('✅ 繳費已駁回！', 'success');
-                  setTimeout(() => loadAdminData(), 1000);
-              } else {
-                  throw new Error(result.message || '駁回失敗');
-              }
-              
-          } catch (error) {
-              console.error('駁回繳費失敗:', error);
-              showMessage('❌ 駁回失敗: ' + error.message, 'error');
-          }
-      }
-      
-      // 格式化日期
-      function formatDate(dateString) {
-          try {
-              const date = new Date(dateString);
-              return date.toLocaleDateString('zh-TW') + ' ' + 
-                     date.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-          } catch (error) {
-              return '未知日期';
-          }
-      }
-      
-      // 顯示訊息
-      function showMessage(message, type = 'info') {
-          const messageContainer = document.getElementById('messageContainer');
-          const alertClass = type === 'success' ? 'alert-success' : 
-                            type === 'error' ? 'alert-error' : 
-                            type === 'warning' ? 'alert-warning' : 'alert-info';
-          
-          messageContainer.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
-          
-          // 5秒後自動清除訊息
-          setTimeout(() => {
-              messageContainer.innerHTML = '';
-          }, 5000);
-      }
-  </script>
+                        <p>💰 單價: $${order.unitPrice || 0}</p>
+                        <p>💳 小計: $${(order.quantity || 1) * (order.unitPrice || 0)}</p>
+                        <p>📅 日期: ${formatDate(order.orderDate)}</p>
+                        ${order.paymentMethod ? `<p>💳 繳費方式: ${order.paymentMethod}</p>` : ''}
+                        ${order.paymentNote ? `<p>📝 備註: ${order.paymentNote}</p>` : ''}
+                        
+                        ${paymentStatus === 'unpaid' ? `
+                            <div class="payment-form" id="paymentForm_${index}">
+                                <h5>💳 回報繳費</h5>
+                                <div class="payment-methods">
+                                    <div class="payment-method" onclick="selectPaymentMethod(${index}, 'cash')">💵 現金</div>
+                                    <div class="payment-method" onclick="selectPaymentMethod(${index}, 'transfer')">🏦 轉帳</div>
+                                    <div class="payment-method" onclick="selectPaymentMethod(${index}, 'linepay')">📱 LinePay</div>
+                                </div>
+                                <div class="form-group">
+                                    <textarea id="paymentNote_${index}" placeholder="備註 (轉帳請提供後5碼)" rows="2"></textarea>
+                                </div>
+                                <button class="btn btn-primary" onclick="reportPayment('${order.orderId}', ${index})">
+                                    ✅ 回報繳費
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            listContainer.innerHTML = orderHtml;
+        }
+        
+        // 選擇繳費方式
+        function selectPaymentMethod(orderIndex, method) {
+            const form = document.getElementById(`paymentForm_${orderIndex}`);
+            const methods = form.querySelectorAll('.payment-method');
+            
+            methods.forEach(m => m.classList.remove('selected'));
+            event.target.classList.add('selected');
+            
+            // 儲存選擇的方式
+            form.setAttribute('data-payment-method', method);
+            
+            // 如果是轉帳，自動聚焦到備註欄
+            if (method === 'transfer') {
+                document.getElementById(`paymentNote_${orderIndex}`).focus();
+            }
+        }
+        
+        // 回報繳費
+        async function reportPayment(orderId, orderIndex) {
+            const form = document.getElementById(`paymentForm_${orderIndex}`);
+            const paymentMethod = form.getAttribute('data-payment-method');
+            const paymentNote = document.getElementById(`paymentNote_${orderIndex}`).value.trim();
+            
+            if (!paymentMethod) {
+                showMessage('請選擇繳費方式', 'error');
+                return;
+            }
+            
+            if (paymentMethod === 'transfer' && !paymentNote) {
+                showMessage('轉帳請提供後5碼或相關資訊', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(gasWebAppUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'reportPayment',
+                        data: {
+                            orderId: orderId,
+                            paymentMethod: paymentMethod,
+                            paymentNote: paymentNote,
+                            reportedBy: currentUser.displayName,
+                            reportedAt: new Date().toISOString()
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('✅ 繳費回報成功！等待管理員確認', 'success');
+                    setTimeout(() => loadUserOrders(), 1000);
+                } else {
+                    throw new Error(result.message || '回報失敗');
+                }
+                
+            } catch (error) {
+                console.error('回報繳費失敗:', error);
+                showMessage('❌ 回報失敗: ' + error.message, 'error');
+            }
+        }
+        
+        // 載入管理者資料
+        async function loadAdminData() {
+            if (userRole !== 'admin') {
+                document.getElementById('membersList').innerHTML = 
+                    '<div class="alert alert-error">❌ 您沒有管理員權限</div>';
+                return;
+            }
+            
+            try {
+                document.getElementById('membersList').innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        載入會員資料中...
+                    </div>
+                `;
+                
+                const url = `${gasWebAppUrl}?action=getAllMembersWithOrders&timestamp=${Date.now()}`;
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayMembersList(result.data || []);
+                } else {
+                    throw new Error(result.message || '載入失敗');
+                }
+                
+            } catch (error) {
+                console.error('載入會員資料失敗:', error);
+                document.getElementById('membersList').innerHTML = 
+                    `<div class="alert alert-error">❌ 載入失敗: ${error.message}</div>`;
+            }
+        }
+        
+        // 顯示會員列表
+        function displayMembersList(members) {
+            const statsContainer = document.getElementById('adminStats');
+            const listContainer = document.getElementById('membersList');
+            
+            if (!members || members.length === 0) {
+                listContainer.innerHTML = 
+                    '<div class="alert alert-info">📝 暫無會員資料</div>';
+                statsContainer.style.display = 'none';
+                return;
+            }
+            
+            // 計算統計資料
+            const totalMembers = members.length;
+            const pendingPayments = members.reduce((count, member) => {
+                return count + (member.orders || []).filter(order => order.paymentStatus === 'reported').length;
+            }, 0);
+            
+            document.getElementById('totalMembers').textContent = totalMembers;
+            document.getElementById('pendingPayments').textContent = pendingPayments;
+            statsContainer.style.display = 'grid';
+            
+            // 顯示會員列表
+            const memberHtml = members.map(member => {
+                const orders = member.orders || [];
+                const totalAmount = orders.reduce((sum, order) => sum + ((order.quantity || 1) * (order.unitPrice || 0)), 0);
+                const reportedOrders = orders.filter(order => order.paymentStatus === 'reported');
+                
+                return `
+                    <div class="member-item" onclick="toggleMemberDetails('${member.lineUserId}')">
+                        <h5>${member.realName || member.displayName} 
+                            ${reportedOrders.length > 0 ? `<span class="payment-status status-reported">${reportedOrders.length} 筆待確認</span>` : ''}
+                        </h5>
+                        <p>📱 LINE: ${member.displayName}</p>
+                        <p>📦 訂單數: ${orders.length} 筆</p>
+                        <p>💰 總金額: $${totalAmount}</p>
+                        
+                        <div id="memberDetails_${member.lineUserId}" class="hidden" style="margin-top: 15px;">
+                            ${orders.map(order => `
+                                <div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 3px solid ${order.paymentStatus === 'reported' ? '#ffc107' : order.paymentStatus === 'confirmed' ? '#28a745' : '#dc3545'};">
+                                    <strong>${order.productId}</strong> - 數量: ${order.quantity} - $${(order.quantity || 1) * (order.unitPrice || 0)}
+                                    <br>狀態: ${order.paymentStatus === 'confirmed' ? '已確認' : order.paymentStatus === 'reported' ? '已回報' : '未繳費'}
+                                    ${order.paymentMethod ? `<br>繳費方式: ${order.paymentMethod}` : ''}
+                                    ${order.paymentNote ? `<br>備註: ${order.paymentNote}` : ''}
+                                    
+                                    ${order.paymentStatus === 'reported' ? `
+                                        <div class="admin-actions">
+                                            <button class="admin-btn admin-btn-confirm" onclick="confirmPayment('${order.orderId}', event)">
+                                                ✅ 確認繳費
+                                            </button>
+                                            <button class="admin-btn admin-btn-reject" onclick="rejectPayment('${order.orderId}', event)">
+                                                ❌ 駁回
+                                            </button>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            listContainer.innerHTML = memberHtml;
+        }
+        
+        // 切換會員詳細資料顯示
+        function toggleMemberDetails(lineUserId) {
+            const details = document.getElementById(`memberDetails_${lineUserId}`);
+            if (details) {
+                details.classList.toggle('hidden');
+            }
+        }
+        
+        // 搜尋會員
+        function searchMembers() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+            
+            if (!searchTerm) {
+                loadAdminData();
+                return;
+            }
+            
+            const memberItems = document.querySelectorAll('.member-item');
+            memberItems.forEach(item => {
+                const memberName = item.querySelector('h5').textContent.toLowerCase();
+                if (memberName.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        // 確認繳費
+        async function confirmPayment(orderId, event) {
+            event.stopPropagation();
+            
+            if (!confirm('確定要確認此筆繳費嗎？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(gasWebAppUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'confirmPayment',
+                        data: {
+                            orderId: orderId,
+                            confirmedBy: currentUser.displayName,
+                            confirmedAt: new Date().toISOString()
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('✅ 繳費已確認！', 'success');
+                    setTimeout(() => loadAdminData(), 1000);
+                } else {
+                    throw new Error(result.message || '確認失敗');
+                }
+                
+            } catch (error) {
+                console.error('確認繳費失敗:', error);
+                showMessage('❌ 確認失敗: ' + error.message, 'error');
+            }
+        }
+        
+        // 駁回繳費
+        async function rejectPayment(orderId, event) {
+            event.stopPropagation();
+            
+            const reason = prompt('請輸入駁回原因：');
+            if (!reason) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(gasWebAppUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'rejectPayment',
+                        data: {
+                            orderId: orderId,
+                            rejectedBy: currentUser.displayName,
+                            rejectedAt: new Date().toISOString(),
+                            rejectionReason: reason
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('✅ 繳費已駁回！', 'success');
+                    setTimeout(() => loadAdminData(), 1000);
+                } else {
+                    throw new Error(result.message || '駁回失敗');
+                }
+                
+            } catch (error) {
+                console.error('駁回繳費失敗:', error);
+                showMessage('❌ 駁回失敗: ' + error.message, 'error');
+            }
+        }
+        
+        // 格式化日期
+        function formatDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-TW') + ' ' + 
+                       date.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+            } catch (error) {
+                return '未知日期';
+            }
+        }
+        
+        // 顯示訊息
+        function showMessage(message, type = 'info') {
+            const messageContainer = document.getElementById('messageContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 
+                              type === 'error' ? 'alert-error' : 
+                              type === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            messageContainer.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+            
+            // 5秒後自動清除訊息
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 5000);
+        }
+    </script>
 </body>
 </html>
