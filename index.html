@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LIFF 管理員系統</title>
+  <title>LIFF 訂單系統</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
       * {
@@ -14,13 +14,13 @@
 
       body {
           font-family: 'Microsoft JhengHei', Arial, sans-serif;
-          background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           min-height: 100vh;
           color: #333;
       }
 
       .container {
-          max-width: 800px;
+          max-width: 500px;
           margin: 0 auto;
           padding: 20px;
           min-height: 100vh;
@@ -46,7 +46,7 @@
       }
 
       .header h1 {
-          color: #ff6b6b;
+          color: #667eea;
           font-size: 28px;
           margin-bottom: 10px;
       }
@@ -56,11 +56,11 @@
           font-size: 16px;
       }
 
-      .admin-info {
+      .user-info {
           display: flex;
           align-items: center;
           padding: 20px;
-          background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+          background: linear-gradient(135deg, #667eea, #764ba2);
           border-radius: 12px;
           margin-bottom: 25px;
           color: white;
@@ -69,12 +69,12 @@
           transition: all 0.5s ease;
       }
 
-      .admin-info.show {
+      .user-info.show {
           opacity: 1;
           transform: translateY(0);
       }
 
-      .admin-avatar {
+      .user-avatar {
           width: 60px;
           height: 60px;
           border-radius: 50%;
@@ -89,49 +89,29 @@
           overflow: hidden;
       }
 
-      .admin-avatar img {
+      .user-avatar img {
           width: 100%;
           height: 100%;
           object-fit: cover;
           border-radius: 50%;
       }
 
-      .admin-details h3 {
+      .user-details h3 {
           font-size: 18px;
           margin-bottom: 5px;
+          font-weight: 600;
       }
 
-      .admin-details p {
+      .user-details p {
           font-size: 14px;
           opacity: 0.9;
       }
 
-      .admin-id {
+      .user-id {
           font-size: 12px;
           opacity: 0.7;
           margin-top: 2px;
           font-family: monospace;
-      }
-
-      .line-info-card {
-          background: #00C300;
-          color: white;
-          padding: 15px;
-          border-radius: 12px;
-          margin-bottom: 20px;
-          text-align: center;
-          animation: slideIn 0.5s ease-out;
-      }
-
-      .line-info-title {
-          font-size: 16px;
-          font-weight: bold;
-          margin-bottom: 10px;
-      }
-
-      .line-info-details {
-          font-size: 14px;
-          opacity: 0.9;
       }
 
       .form-group {
@@ -145,7 +125,7 @@
           color: #555;
       }
 
-      .form-group input, .form-group select {
+      .form-group input, .form-group textarea, .form-group select {
           width: 100%;
           padding: 12px 15px;
           border: 2px solid #e1e5e9;
@@ -154,32 +134,42 @@
           transition: all 0.3s ease;
       }
 
-      .form-group input:focus, .form-group select:focus {
+      .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
           outline: none;
-          border-color: #ff6b6b;
-          box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
       }
 
       .btn {
-          padding: 12px 20px;
+          width: 100%;
+          padding: 15px;
           border: none;
           border-radius: 8px;
           font-size: 16px;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s ease;
-          margin-right: 10px;
           margin-bottom: 10px;
       }
 
       .btn-primary {
-          background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+          background: linear-gradient(135deg, #667eea, #764ba2);
           color: white;
       }
 
       .btn-primary:hover {
           transform: translateY(-2px);
-          box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+          box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-success {
+          background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+          color: white;
+      }
+
+      .btn-success:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
       }
 
       .btn:disabled {
@@ -259,40 +249,63 @@
           border: 1px solid #f44336;
       }
 
-      .admin-status {
+      .message.info {
+          background: #e3f2fd;
+          color: #1565c0;
+          border: 1px solid #2196f3;
+      }
+
+      .line-info-card {
+          background: #00C300;
+          color: white;
+          padding: 15px;
+          border-radius: 12px;
+          margin-bottom: 20px;
+          text-align: center;
+      }
+
+      .line-info-title {
+          font-size: 16px;
+          font-weight: bold;
+          margin-bottom: 10px;
+      }
+
+      .line-info-details {
+          font-size: 14px;
+          opacity: 0.9;
+      }
+
+      .admin-indicator {
+          background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+          color: white;
+          padding: 10px;
+          text-align: center;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          font-weight: bold;
+      }
+
+      .user-status {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 10px 15px;
-          background: rgba(255,255,255,0.2);
+          background: #f8f9fa;
           border-radius: 8px;
           margin-bottom: 15px;
           font-size: 14px;
       }
 
       .status-label {
-          color: rgba(255,255,255,0.8);
+          color: #666;
       }
 
       .status-value {
           font-weight: bold;
-          color: white;
+          color: #333;
       }
 
-      .debug-info {
-          background: #f8f9fa;
-          border: 1px solid #dee2e6;
-          border-radius: 8px;
-          padding: 15px;
-          margin-top: 20px;
-          font-family: monospace;
-          font-size: 12px;
-          color: #495057;
-          max-height: 300px;
-          overflow-y: auto;
-      }
-
-      @media (max-width: 768px) {
+      @media (max-width: 480px) {
           .container {
               padding: 10px;
           }
@@ -311,98 +324,79 @@
           <div class="loading-text">正在連接 LINE...</div>
       </div>
 
-      <!-- 管理員登入驗證 -->
-      <div id="loginSection" class="section active">
+      <!-- 管理員提示 -->
+      <div id="adminIndicator" class="admin-indicator" style="display: none;">
+          👑 您是管理員，請點選下方按鈕進入管理系統
+      </div>
+
+      <!-- 主要內容區 -->
+      <div id="mainSection" class="section active">
           <div class="card">
               <div class="header">
-                  <h1>👑 管理員系統</h1>
-                  <p>請輸入管理員密鑰進行身分驗證</p>
+                  <h1>📱 LIFF 訂單系統</h1>
+                  <p>歡迎使用 LINE 訂單管理系統</p>
               </div>
 
-              <!-- LINE 資訊顯示 -->
+              <!-- LINE 用戶資訊顯示 -->
               <div id="lineInfoCard" class="line-info-card" style="display: none;">
                   <div class="line-info-title">✅ LINE 身分驗證成功</div>
-                  <div class="line-info-details">已取得您的 LINE 管理員資訊</div>
+                  <div class="line-info-details">已取得您的 LINE 資訊</div>
               </div>
 
-              <!-- 管理員 LINE 資訊顯示 -->
-              <div id="adminInfoDisplay" class="admin-info" style="display: none;">
-                  <div id="adminAvatar" class="admin-avatar">
+              <!-- 用戶資訊卡片 -->
+              <div id="userInfoDisplay" class="user-info" style="display: none;">
+                  <div id="userAvatar" class="user-avatar">
                       <span id="avatarText"></span>
-                      <img id="avatarImage" style="display: none;" alt="管理員頭像">
+                      <img id="avatarImage" style="display: none;" alt="用戶頭像">
                   </div>
-                  <div class="admin-details">
-                      <h3 id="adminDisplayName">載入中...</h3>
-                      <p>LINE 管理員</p>
-                      <div id="adminUserId" class="admin-id">ID: 載入中...</div>
+                  <div class="user-details">
+                      <h3 id="lineDisplayName">載入中...</h3>
+                      <p>LINE 用戶</p>
+                      <div id="lineUserId" class="user-id">ID: 載入中...</div>
                   </div>
               </div>
 
-              <!-- 管理員狀態資訊 -->
-              <div id="adminStatusInfo" style="display: none;">
-                  <div class="admin-status">
+              <!-- 用戶狀態資訊 -->
+              <div id="userStatusInfo" style="display: none;">
+                  <div class="user-status">
+                      <span class="status-label">註冊狀態：</span>
+                      <span id="registrationStatus" class="status-value">檢查中...</span>
+                  </div>
+                  <div class="user-status">
+                      <span class="status-label">管理員權限：</span>
+                      <span id="adminStatus" class="status-value">檢查中...</span>
+                  </div>
+                  <div class="user-status">
                       <span class="status-label">登入時間：</span>
                       <span id="loginTime" class="status-value">-</span>
                   </div>
-                  <div class="admin-status">
-                      <span class="status-label">管理員權限：</span>
-                      <span id="adminPermission" class="status-value">驗證中...</span>
-                  </div>
               </div>
 
-              <form id="loginForm">
+              <!-- 真實姓名輸入表單 -->
+              <form id="userInfoForm" style="display: none;">
                   <div class="form-group">
-                      <label for="adminSecret">管理員密鑰</label>
-                      <input type="password" id="adminSecret" placeholder="請輸入管理員密鑰" required>
+                      <label for="realName">真實姓名 *</label>
+                      <input type="text" id="realName" name="realName" 
+                             placeholder="請輸入您的真實姓名以查看訂單" required>
+                      <small style="color: #666; font-size: 12px;">
+                          ※ 此姓名將用於訂單識別，請輸入真實姓名
+                      </small>
                   </div>
                   
-                  <button type="submit" class="btn btn-primary" style="width: 100%;">
-                      🔐 驗證身分
+                  <button type="submit" class="btn btn-primary" id="submitBtn">
+                      📋 查看我的訂單
                   </button>
               </form>
 
-              <!-- 除錯資訊按鈕 -->
-              <button id="debugBtn" class="btn" style="background: #6c757d; color: white; width: 100%; margin-top: 10px; display: none;" onclick="showDebugInfo()">
-                  🔧 顯示除錯資訊
+              <!-- 管理員按鈕 -->
+              <button id="adminBtn" class="btn btn-success" style="display: none;" onclick="openAdminSystem()">
+                  👑 進入管理系統
               </button>
 
-              <!-- 除錯資訊顯示區 -->
-              <div id="debugInfo" class="debug-info" style="display: none;"></div>
-          </div>
-      </div>
-
-      <!-- 主要管理功能 -->
-      <div id="mainSection" class="section">
-          <div class="card">
-              <div class="header">
-                  <h1>👑 管理員控制台</h1>
-                  <p>歡迎使用管理員系統</p>
-              </div>
-
-              <!-- 管理員資訊確認 -->
-              <div id="adminInfoConfirm" class="admin-info">
-                  <div id="adminAvatarConfirm" class="admin-avatar">
-                      <span id="avatarTextConfirm"></span>
-                      <img id="avatarImageConfirm" style="display: none;" alt="管理員頭像">
-                  </div>
-                  <div class="admin-details">
-                      <h3 id="adminNameConfirm">載入中...</h3>
-                      <p>系統管理員</p>
-                      <div id="adminIdConfirm" class="admin-id">已驗證身分</div>
-                  </div>
-              </div>
-
-              <div style="text-align: center; padding: 40px;">
-                  <h3 style="color: #ff6b6b; margin-bottom: 20px;">🚧 管理功能開發中</h3>
-                  <p style="color: #666; margin-bottom: 30px;">
-                      管理員系統功能正在開發中<br>
-                      包含用戶搜尋、訂單管理、繳費管理等功能
-                  </p>
-                  
-                  <button onclick="showDebugInfo()" class="btn btn-primary">
-                      🔧 顯示系統資訊
-                  </button>
-              </div>
+              <!-- 除錯資訊按鈕 -->
+              <button id="debugBtn" class="btn" style="background: #6c757d; color: white; display: none;" onclick="showDebugInfo()">
+                  🔧 顯示除錯資訊
+              </button>
           </div>
       </div>
   </div>
@@ -410,7 +404,7 @@
   <script>
       // ===== 設定與全域變數 =====
       const CONFIG = {
-          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbx_6L8d3Z7rNxROxrk8DrubPEC8sBO5vAx9vYJrnC13BoDFH506O3BKuxhwc11P6QMh/exec', // 請替換為您的 GAS URL
+          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbylbsJJAcMW0rEbojRJYL_hpkUyK-DcSLfwYKjRZISnK2QinYTJelHLBlMRQKp5zr34/exec', // 請替換為您的 GAS URL
           LIFF_ID: '1657285806-2bmkYWkN', // 請替換為您的 LIFF ID
           DEBUG_MODE: true // 開發時設為 true，正式環境設為 false
       };
@@ -423,12 +417,13 @@
           email: null
       };
       
-      let adminToken = null;
+      let currentUser = {};
+      let isAdmin = false;
       let initStartTime = Date.now();
 
       // ===== LIFF 初始化 =====
       document.addEventListener('DOMContentLoaded', function() {
-          console.log('=== LIFF 管理員系統啟動 ===');
+          console.log('=== LIFF 訂單系統啟動 ===');
           console.log('啟動時間:', new Date().toLocaleString());
           
           // 檢查 LIFF SDK
@@ -457,10 +452,10 @@
               
               // 檢查登入狀態
               if (liff.isLoggedIn()) {
-                  console.log('✅ 管理員已登入');
-                  await getAdminProfile();
+                  console.log('✅ 用戶已登入');
+                  await getUserProfile();
               } else {
-                  console.log('❌ 管理員未登入，導向登入頁面');
+                  console.log('❌ 用戶未登入，導向登入頁面');
                   showLoading('導向 LINE 登入...');
                   liff.login();
                   return;
@@ -479,14 +474,14 @@
           }
       }
 
-      async function getAdminProfile() {
+      async function getUserProfile() {
           try {
-              showLoading('取得管理員資料...');
+              showLoading('取得用戶資料...');
               
-              console.log('開始取得管理員 Profile...');
+              console.log('開始取得用戶 Profile...');
               const profile = await liff.getProfile();
               
-              // 儲存管理員資料
+              // 儲存用戶資料
               liffData = {
                   userId: profile.userId,
                   displayName: profile.displayName,
@@ -494,7 +489,7 @@
                   statusMessage: profile.statusMessage || null
               };
               
-              // 嘗試取得 email
+              // 嘗試取得 email (需要 email scope)
               try {
                   const email = await liff.getDecodedIDToken()?.email;
                   if (email) {
@@ -504,20 +499,20 @@
                   console.log('無法取得 email (可能未設定 email scope)');
               }
               
-              console.log('✅ 管理員資料取得成功:', liffData);
+              console.log('✅ 用戶資料取得成功:', liffData);
               
-              // 顯示管理員資訊
-              displayAdminInfo();
+              // 顯示用戶資訊
+              displayUserInfo();
               
               // 顯示 LINE 驗證成功提示
               showLineInfoCard();
               
-              // 更新狀態資訊
-              updateAdminStatus();
+              // 檢查用戶狀態
+              await checkUserStatus();
               
           } catch (error) {
-              console.error('❌ 取得管理員資料失敗:', error);
-              showError(`取得管理員資料失敗: ${error.message}`);
+              console.error('❌ 取得用戶資料失敗:', error);
+              showError(`取得用戶資料失敗: ${error.message}`);
               
               // 顯示除錯按鈕
               if (CONFIG.DEBUG_MODE) {
@@ -526,25 +521,25 @@
           }
       }
 
-      function displayAdminInfo() {
+      function displayUserInfo() {
           try {
-              console.log('顯示管理員資訊...');
+              console.log('顯示用戶資訊...');
               
-              // 更新管理員資訊顯示
-              const adminInfoDisplay = document.getElementById('adminInfoDisplay');
-              const adminDisplayName = document.getElementById('adminDisplayName');
-              const adminUserId = document.getElementById('adminUserId');
+              // 更新用戶資訊顯示
+              const userInfoDisplay = document.getElementById('userInfoDisplay');
+              const lineDisplayName = document.getElementById('lineDisplayName');
+              const lineUserId = document.getElementById('lineUserId');
               const avatarText = document.getElementById('avatarText');
               const avatarImage = document.getElementById('avatarImage');
               
               // 設定顯示名稱
-              adminDisplayName.textContent = liffData.displayName || '未知管理員';
+              lineDisplayName.textContent = liffData.displayName || '未知用戶';
               
               // 設定用戶 ID (遮蔽部分字元)
               const maskedUserId = liffData.userId ? 
                   liffData.userId.substring(0, 8) + '...' + liffData.userId.slice(-4) : 
                   '未知';
-              adminUserId.textContent = `ID: ${maskedUserId}`;
+              lineUserId.textContent = `ID: ${maskedUserId}`;
               
               // 設定頭像
               if (liffData.pictureUrl) {
@@ -556,27 +551,27 @@
                   avatarImage.onerror = function() {
                       this.style.display = 'none';
                       avatarText.style.display = 'flex';
-                      avatarText.textContent = (liffData.displayName || 'A').charAt(0).toUpperCase();
+                      avatarText.textContent = (liffData.displayName || 'U').charAt(0).toUpperCase();
                   };
               } else {
-                  avatarText.textContent = (liffData.displayName || 'A').charAt(0).toUpperCase();
+                  avatarText.textContent = (liffData.displayName || 'U').charAt(0).toUpperCase();
                   avatarText.style.display = 'flex';
                   avatarImage.style.display = 'none';
               }
               
-              // 顯示管理員資訊區塊
-              adminInfoDisplay.style.display = 'flex';
+              // 顯示用戶資訊區塊
+              userInfoDisplay.style.display = 'flex';
               
               // 添加動畫效果
               setTimeout(() => {
-                  adminInfoDisplay.classList.add('show');
+                  userInfoDisplay.classList.add('show');
               }, 100);
               
-              console.log('✅ 管理員資訊顯示完成');
+              console.log('✅ 用戶資訊顯示完成');
               
           } catch (error) {
-              console.error('❌ 顯示管理員資訊失敗:', error);
-              showError('顯示管理員資訊時發生錯誤');
+              console.error('❌ 顯示用戶資訊失敗:', error);
+              showError('顯示用戶資訊時發生錯誤');
           }
       }
 
@@ -590,40 +585,9 @@
           }, 3000);
       }
 
-      function updateAdminStatus() {
-          const adminStatusInfo = document.getElementById('adminStatusInfo');
-          const loginTime = document.getElementById('loginTime');
-          const adminPermission = document.getElementById('adminPermission');
-          
-          // 更新登入時間
-          loginTime.textContent = new Date().toLocaleString();
-          
-          // 更新權限狀態
-          adminPermission.textContent = '待驗證';
-          adminPermission.style.color = '#ffc107';
-          
-          // 顯示狀態資訊
-          adminStatusInfo.style.display = 'block';
-      }
-
-      // ===== 事件監聽器設定 =====
-      function setupEventListeners() {
-          // 管理員登入表單
-          document.getElementById('loginForm').addEventListener('submit', handleAdminLogin);
-      }
-
-      // ===== 管理員登入處理 =====
-      async function handleAdminLogin(event) {
-          event.preventDefault();
-          
+      async function checkUserStatus() {
           try {
-              const secret = document.getElementById('adminSecret').value.trim();
-              
-              if (!secret) {
-                  throw new Error('請輸入管理員密鑰');
-              }
-              
-              showLoading('驗證管理員身分...');
+              showLoading('檢查用戶狀態...');
               
               // 檢查 API URL 是否已設定
               if (CONFIG.API_BASE_URL.includes('YOUR_GAS_WEB_APP_URL')) {
@@ -636,10 +600,10 @@
                       'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                      action: 'admin_login',
+                      action: 'user_login',
                       userId: liffData.userId,
                       displayName: liffData.displayName,
-                      secret: secret
+                      pictureUrl: liffData.pictureUrl
                   })
               });
 
@@ -650,21 +614,37 @@
               const result = await response.json();
               
               if (result.success) {
-                  adminToken = result.data.token;
-                  showMainSection();
-                  showSuccess('管理員登入成功！');
+                  isAdmin = result.data.isAdmin || false;
                   
-                  // 更新權限狀態
-                  document.getElementById('adminPermission').textContent = '已驗證';
-                  document.getElementById('adminPermission').style.color = '#28a745';
+                  // 更新狀態顯示
+                  updateUserStatus(result.data);
+                  
+                  // 如果是管理員，顯示管理員功能
+                  if (isAdmin) {
+                      document.getElementById('adminIndicator').style.display = 'block';
+                      document.getElementById('adminBtn').style.display = 'block';
+                  }
+                  
+                  // 如果已註冊，自動填入真實姓名
+                  if (result.data.isRegistered && result.data.userInfo) {
+                      document.getElementById('realName').value = result.data.userInfo.realName;
+                      currentUser = result.data.userInfo;
+                      showInfo('歡迎回來！已自動填入您的註冊資料。');
+                  }
+                  
+                  // 顯示註冊表單
+                  document.getElementById('userInfoForm').style.display = 'block';
                   
               } else {
-                  throw new Error(result.message || '登入失敗');
+                  throw new Error(result.message || '檢查用戶狀態失敗');
               }
               
           } catch (error) {
-              console.error('❌ 管理員登入失敗:', error);
-              showError(error.message);
+              console.error('❌ 檢查用戶狀態失敗:', error);
+              showError(`連接伺服器失敗: ${error.message}`);
+              
+              // 仍然顯示表單讓用戶可以嘗試
+              document.getElementById('userInfoForm').style.display = 'block';
               
               // 顯示除錯按鈕
               if (CONFIG.DEBUG_MODE) {
@@ -675,47 +655,109 @@
           }
       }
 
-      // ===== 頁面切換函數 =====
-      function showSection(sectionId) {
-          document.querySelectorAll('.section').forEach(section => {
-              section.classList.remove('active');
-          });
-          document.getElementById(sectionId).classList.add('active');
+      function updateUserStatus(data) {
+          const userStatusInfo = document.getElementById('userStatusInfo');
+          const registrationStatus = document.getElementById('registrationStatus');
+          const adminStatus = document.getElementById('adminStatus');
+          const loginTime = document.getElementById('loginTime');
+          
+          // 更新註冊狀態
+          registrationStatus.textContent = data.isRegistered ? '已註冊' : '未註冊';
+          registrationStatus.style.color = data.isRegistered ? '#28a745' : '#ffc107';
+          
+          // 更新管理員狀態
+          adminStatus.textContent = data.isAdmin ? '是' : '否';
+          adminStatus.style.color = data.isAdmin ? '#dc3545' : '#6c757d';
+          
+          // 更新登入時間
+          loginTime.textContent = new Date().toLocaleString();
+          
+          // 顯示狀態資訊
+          userStatusInfo.style.display = 'block';
       }
 
-      function showMainSection() {
-          showSection('mainSection');
+      // ===== 事件監聽器設定 =====
+      function setupEventListeners() {
+          // 用戶資訊表單提交
+          document.getElementById('userInfoForm').addEventListener('submit', handleUserInfoSubmit);
+      }
+
+      async function handleUserInfoSubmit(event) {
+          event.preventDefault();
           
-          // 更新管理員資訊顯示
-          const adminNameConfirm = document.getElementById('adminNameConfirm');
-          const adminIdConfirm = document.getElementById('adminIdConfirm');
-          const avatarTextConfirm = document.getElementById('avatarTextConfirm');
-          const avatarImageConfirm = document.getElementById('avatarImageConfirm');
-          
-          adminNameConfirm.textContent = liffData.displayName || '未知管理員';
-          adminIdConfirm.textContent = '管理員身分已驗證';
-          
-          // 設定頭像
-          if (liffData.pictureUrl) {
-              avatarImageConfirm.src = liffData.pictureUrl;
-              avatarImageConfirm.style.display = 'block';
-              avatarTextConfirm.style.display = 'none';
+          try {
+              const realName = document.getElementById('realName').value.trim();
               
-              avatarImageConfirm.onerror = function() {
-                  this.style.display = 'none';
-                  avatarTextConfirm.style.display = 'flex';
-                  avatarTextConfirm.textContent = (liffData.displayName || 'A').charAt(0).toUpperCase();
-              };
-          } else {
-              avatarTextConfirm.textContent = (liffData.displayName || 'A').charAt(0).toUpperCase();
-              avatarTextConfirm.style.display = 'flex';
-              avatarImageConfirm.style.display = 'none';
+              // 驗證真實姓名
+              if (!realName) {
+                  throw new Error('請輸入真實姓名');
+              }
+              
+              if (realName.length < 2) {
+                  throw new Error('真實姓名至少需要2個字元');
+              }
+              
+              if (!/^[\u4e00-\u9fa5a-zA-Z\s]+$/.test(realName)) {
+                  throw new Error('真實姓名只能包含中文、英文和空格');
+              }
+              
+              showLoading('註冊中...');
+              
+              // 註冊用戶
+              const registerResult = await registerUser(realName);
+              
+              if (registerResult.success) {
+                  currentUser = registerResult.data.userInfo;
+                  showSuccess('註冊成功！正在載入您的訂單資料...');
+                  
+                  // 這裡可以繼續其他功能，如載入訂單等
+                  console.log('用戶註冊成功:', currentUser);
+                  
+              } else {
+                  throw new Error(registerResult.message);
+              }
+              
+          } catch (error) {
+              showError(error.message);
+          } finally {
+              hideLoading();
+          }
+      }
+
+      // ===== API 呼叫函數 =====
+      async function registerUser(realName) {
+          const response = await fetch(CONFIG.API_BASE_URL, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                  action: 'user_register',
+                  userId: liffData.userId,
+                  displayName: liffData.displayName,
+                  realName: realName,
+                  pictureUrl: liffData.pictureUrl
+              })
+          });
+          
+          if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
           
-          // 添加動畫效果
-          setTimeout(() => {
-              document.getElementById('adminInfoConfirm').classList.add('show');
-          }, 100);
+          return await response.json();
+      }
+
+      // ===== 管理員功能 =====
+      function openAdminSystem() {
+          const adminUrl = 'admin.html'; // 管理員頁面 URL
+          if (liff.isInClient()) {
+              liff.openWindow({
+                  url: adminUrl,
+                  external: true
+              });
+          } else {
+              window.open(adminUrl, '_blank');
+          }
       }
 
       // ===== 工具函數 =====
@@ -741,10 +783,10 @@
           messageDiv.className = `message ${type}`;
           messageDiv.textContent = message;
           
-          // 插入到當前活動區段的開頭
-          const activeSection = document.querySelector('.section.active .card');
-          if (activeSection) {
-              activeSection.insertBefore(messageDiv, activeSection.firstChild);
+          // 插入到卡片開頭
+          const card = document.querySelector('.card');
+          if (card) {
+              card.insertBefore(messageDiv, card.firstChild);
               
               // 5秒後自動移除訊息
               setTimeout(() => {
@@ -763,13 +805,18 @@
           showMessage(message, 'error');
       }
 
+      function showInfo(message) {
+          showMessage(message, 'info');
+      }
+
       // ===== 除錯工具 =====
       function showDebugInfo() {
           const debugInfo = {
-              'LIFF 物件': liff ? '已載入' : '未載入',
+              'LIFF 物件': liff,
               'LIFF 資料': liffData,
-              '管理員 Token': adminToken ? '已取得' : '未取得',
-              '登入狀態': liff ? liff.isLoggedIn() : false,
+              '當前用戶': currentUser,
+              '是否為管理員': isAdmin,
+              '登入狀態': liff ? liff.isLoggedIn() : 'LIFF 未載入',
               '初始化時間': `${Date.now() - initStartTime}ms`,
               '設定': CONFIG,
               '瀏覽器資訊': {
@@ -779,20 +826,23 @@
               }
           };
           
-          console.log('=== LIFF 管理員系統除錯資訊 ===', debugInfo);
+          console.log('=== LIFF 除錯資訊 ===', debugInfo);
           
-          // 顯示除錯資訊在頁面上
-          const debugInfoDiv = document.getElementById('debugInfo');
-          debugInfoDiv.innerHTML = `
-              <h4>除錯資訊</h4>
-              <pre>${JSON.stringify(debugInfo, null, 2)}</pre>
-          `;
-          debugInfoDiv.style.display = 'block';
+          // 顯示簡化的除錯資訊
+          const debugText = `
+LIFF 狀態: ${liff ? (liff.isLoggedIn() ? '已登入' : '未登入') : '未載入'}
+用戶 ID: ${liffData.userId || '未取得'}
+顯示名稱: ${liffData.displayName || '未取得'}
+管理員: ${isAdmin ? '是' : '否'}
+初始化時間: ${Date.now() - initStartTime}ms
+          `.trim();
+          
+          alert(debugText);
       }
 
-      window.debugAdmin = showDebugInfo;
+      window.debugLiff = showDebugInfo;
 
-      console.log('✅ LIFF 管理員系統腳本載入完成');
+      console.log('✅ LIFF 訂單系統腳本載入完成');
   </script>
 </body>
 </html>
