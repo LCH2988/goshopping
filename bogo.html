@@ -105,7 +105,7 @@
             font-size: 14px;
         }
 
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 15px;
             border: 2px solid #FFE4B5;
@@ -115,7 +115,7 @@
             transition: all 0.3s ease;
         }
 
-        .form-group input:focus {
+        .form-group input:focus, .form-group select:focus {
             outline: none;
             border-color: #FF8C69;
             box-shadow: 0 0 0 3px rgba(255, 140, 105, 0.1);
@@ -166,6 +166,17 @@
         .btn-secondary:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(210, 180, 140, 0.6);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #32CD32, #228B22);
+            color: white;
+            box-shadow: 0 4px 15px rgba(50, 205, 50, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(50, 205, 50, 0.6);
         }
 
         .btn:disabled {
@@ -330,21 +341,6 @@
             font-weight: bold;
         }
 
-        .payment-form {
-            background: linear-gradient(135deg, #FFFAF0, #FFF8DC);
-            border: 2px solid #FFE4B5;
-            border-radius: 15px;
-            padding: 25px;
-            margin-top: 20px;
-        }
-
-        .payment-form h3 {
-            color: #D2691E;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 18px;
-        }
-
         .payment-methods {
             display: grid;
             gap: 12px;
@@ -486,6 +482,42 @@
             font-size: 16px;
         }
 
+        .menu-buttons {
+            display: grid;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .payment-form {
+            background: linear-gradient(135deg, #FFFAF0, #FFF8DC);
+            border: 2px solid #FFE4B5;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .payment-form h3 {
+            color: #D2691E;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .transfer-note {
+            background: #FFF8DC;
+            border: 1px solid #FFE4B5;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #D2691E;
+            display: none;
+        }
+
+        .transfer-note.show {
+            display: block;
+        }
+
         @media (max-width: 480px) {
             .container {
                 margin: 5px;
@@ -516,28 +548,86 @@
                 <div>系統初始化中...</div>
             </div>
 
-            <!-- 用戶註冊/確認區段 -->
-            <div id="userSection" class="section">
+            <!-- 未註冊用戶 - 註冊區段 -->
+            <div id="registerSection" class="section">
                 <div class="user-info">
                     <h2>👋 歡迎使用</h2>
-                    <div id="userDisplay" class="user-display" style="display: none;">
-                        <div id="userAvatar" class="user-avatar"></div>
+                    <div id="unregisteredUserDisplay" class="user-display">
+                        <div id="unregisteredUserAvatar" class="user-avatar"></div>
                         <div>
-                            <div id="lineDisplayName" class="line-name"></div>
+                            <div id="unregisteredLineName" class="line-name"></div>
+                            <div style="font-size: 12px; color: #CD853F;">LINE 用戶</div>
+                        </div>
+                    </div>
+                    <div class="info">請先完成註冊才能使用繳費功能</div>
+                </div>
+
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerRealName">真實姓名 <span style="color: #FF6347;">*</span></label>
+                        <input type="text" id="registerRealName" name="realName" class="required" placeholder="請輸入您的真實姓名">
+                        <div class="required-note">此資訊用於訂單核對，請務必填寫正確</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="registerBtn">
+                        📝 確認送出
+                    </button>
+                </form>
+            </div>
+
+            <!-- 已註冊用戶 - 主選單區段 -->
+            <div id="menuSection" class="section">
+                <div class="user-info">
+                    <h2>🎉 歡迎回來</h2>
+                    <div id="registeredUserDisplay" class="user-display">
+                        <div id="registeredUserAvatar" class="user-avatar"></div>
+                        <div>
+                            <div id="registeredLineName" class="line-name"></div>
+                            <div id="registeredRealName" style="font-size: 14px; color: #8B4513; font-weight: 600;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-buttons">
+                    <button class="btn btn-secondary" onclick="showModifySection()">
+                        ✏️ 確認修改 (變更名字)
+                    </button>
+                    
+                    <button class="btn btn-primary" onclick="loadUserOrders()">
+                        📋 查詢訂購清單
+                    </button>
+                    
+                    <button class="btn btn-success" onclick="showPaymentSection()">
+                        💳 繳費
+                    </button>
+                </div>
+            </div>
+
+            <!-- 修改資料區段 -->
+            <div id="modifySection" class="section">
+                <div class="user-info">
+                    <h2>✏️ 修改個人資料</h2>
+                    <div class="user-display">
+                        <div id="modifyUserAvatar" class="user-avatar"></div>
+                        <div>
+                            <div id="modifyLineName" class="line-name"></div>
                             <div style="font-size: 12px; color: #CD853F;">LINE 用戶</div>
                         </div>
                     </div>
                 </div>
 
-                <form id="userForm">
+                <form id="modifyForm">
                     <div class="form-group">
-                        <label for="realName">真實姓名 <span style="color: #FF6347;">*</span></label>
-                        <input type="text" id="realName" name="realName" placeholder="請輸入您的真實姓名">
-                        <div class="required-note">此資訊用於訂單核對，請務必填寫正確</div>
+                        <label for="modifyRealName">真實姓名</label>
+                        <input type="text" id="modifyRealName" name="realName" placeholder="請輸入您的真實姓名">
                     </div>
                     
-                    <button type="submit" class="btn btn-primary" id="confirmUserBtn">
-                        ✅ 確認資料
+                    <button type="submit" class="btn btn-primary" id="modifyBtn">
+                        ✅ 確認修改
+                    </button>
+                    
+                    <button type="button" class="btn btn-secondary" onclick="showMenuSection()">
+                        ⬅️ 返回主選單
                     </button>
                 </form>
             </div>
@@ -546,67 +636,61 @@
             <div id="ordersSection" class="section">
                 <div class="user-info">
                     <h2>📋 我的訂單</h2>
-                    <div id="confirmedUserDisplay" class="user-display">
-                        <div id="confirmedUserAvatar" class="user-avatar"></div>
+                    <div class="user-display">
+                        <div id="orderUserAvatar" class="user-avatar"></div>
                         <div>
-                            <div id="confirmedLineName" class="line-name"></div>
-                            <div id="confirmedRealName" style="font-size: 14px; color: #8B4513; font-weight: 600;"></div>
+                            <div id="orderLineName" class="line-name"></div>
+                            <div id="orderRealName" style="font-size: 14px; color: #8B4513; font-weight: 600;"></div>
                         </div>
                     </div>
                 </div>
 
                 <div id="ordersList"></div>
                 
-                <button class="btn btn-secondary" onclick="showUserSection()">
-                    ⚙️ 修改個人資料
+                <button class="btn btn-secondary" onclick="showMenuSection()">
+                    ⬅️ 返回主選單
                 </button>
             </div>
 
             <!-- 繳費區段 -->
             <div id="paymentSection" class="section">
                 <div class="payment-form">
-                    <h3>💰 提交繳費證明</h3>
+                    <h3>💰 選擇繳費方式</h3>
                     
-                    <div class="form-group">
-                        <label>選擇訂單</label>
-                        <select id="paymentOrderSelect" class="form-group input" style="padding: 15px; border: 2px solid #FFE4B5; border-radius: 12px; background: #FFFAF0;">
-                            <option value="">請選擇要繳費的訂單</option>
-                        </select>
-                    </div>
-
                     <div class="form-group">
                         <label>繳費方式</label>
                         <div class="payment-methods">
-                            <div class="payment-method">
-                                <input type="radio" id="bank" name="paymentMethod" value="銀行轉帳">
-                                <label for="bank">🏦 銀行轉帳</label>
+                            <div class="payment-method" data-method="現金">
+                                <input type="radio" id="cash" name="paymentMethod" value="現金">
+                                <label for="cash">💵 現金</label>
                             </div>
-                            <div class="payment-method">
-                                <input type="radio" id="atm" name="paymentMethod" value="ATM轉帳">
-                                <label for="atm">🏧 ATM轉帳</label>
+                            <div class="payment-method" data-method="LINE Pay">
+                                <input type="radio" id="linepay" name="paymentMethod" value="LINE Pay">
+                                <label for="linepay">📱 LINE Pay</label>
                             </div>
-                            <div class="payment-method">
-                                <input type="radio" id="mobile" name="paymentMethod" value="行動支付">
-                                <label for="mobile">📱 行動支付</label>
+                            <div class="payment-method" data-method="轉帳">
+                                <input type="radio" id="transfer" name="paymentMethod" value="轉帳">
+                                <label for="transfer">🏦 轉帳</label>
                             </div>
-                            <div class="payment-method">
-                                <input type="radio" id="cash" name="paymentMethod" value="現金繳費">
-                                <label for="cash">💵 現金繳費</label>
-                            </div>
+                        </div>
+                        
+                        <div id="transferNote" class="transfer-note">
+                            <strong>轉帳資訊：</strong><br>
+                            請於備註欄位提供轉帳帳號後5碼，以便核對
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="paymentNote">備註說明</label>
-                        <textarea id="paymentNote" placeholder="請輸入轉帳帳號後5碼、繳費時間或其他相關資訊..."></textarea>
+                        <textarea id="paymentNote" placeholder="請輸入相關資訊...&#10;• 現金：繳費時間、地點&#10;• LINE Pay：交易編號&#10;• 轉帳：帳號後5碼、轉帳時間"></textarea>
                     </div>
 
-                    <button type="button" class="btn btn-primary" onclick="submitPayment()">
-                        📤 提交繳費證明
+                    <button type="button" class="btn btn-primary" onclick="confirmPayment()">
+                        ✅ 確認繳費方式送出
                     </button>
                     
-                    <button type="button" class="btn btn-secondary" onclick="showOrdersSection()">
-                        ⬅️ 返回訂單列表
+                    <button type="button" class="btn btn-secondary" onclick="showMenuSection()">
+                        ⬅️ 返回主選單
                     </button>
                 </div>
             </div>
@@ -620,7 +704,7 @@
         let userOrders = [];
 
         // API 設定
-        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzXUaddMAHye0yn9EIMFDYNAOzKKUWGzv1PHBw2wmLT-BeQO7PBjLwhV9e7DJMpy4v3/exec';
+        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzNdoyT2-lAhAxYM4weFROAQ9SSaWj_pCJ6AJz0vIhTcp-564kBkF47a-zwnG65HNgo/exec';
 
         // LIFF 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -647,9 +731,6 @@
 
                 console.log('LIFF 用戶資料:', liffData);
 
-                // 顯示用戶資訊
-                displayUserInfo();
-                
                 // 檢查用戶註冊狀態
                 await checkUserRegistration();
 
@@ -658,17 +739,6 @@
                 document.getElementById('loading').innerHTML = 
                     '<div class="error">系統初始化失敗，請重新整理頁面</div>';
             }
-        }
-
-        function displayUserInfo() {
-            // 顯示 LINE 用戶資訊
-            document.getElementById('lineDisplayName').textContent = liffData.displayName;
-            
-            // 設定頭像
-            const avatar = liffData.displayName.charAt(0).toUpperCase();
-            document.getElementById('userAvatar').textContent = avatar;
-            
-            document.getElementById('userDisplay').style.display = 'flex';
         }
 
         async function checkUserRegistration() {
@@ -681,23 +751,17 @@
                 const result = await response.json();
                 console.log('註冊檢查結果:', result);
 
-                if (result.success && result.registered) {
-                    // 用戶已註冊，填入資料並顯示為可修改
-                    currentUser = result.userInfo;
-                    document.getElementById('realName').value = result.userInfo.realName;
-                    document.getElementById('confirmUserBtn').textContent = '✏️ 更新資料';
-                    
-                    // 自動載入訂單
-                    await loadUserOrders();
-                } else {
-                    // 用戶未註冊，顯示必填提示
-                    document.getElementById('realName').classList.add('required');
-                    document.getElementById('confirmUserBtn').textContent = '📝 註冊資料';
-                }
-
-                // 隱藏載入中，顯示用戶區段
+                // 隱藏載入中
                 document.getElementById('loading').classList.remove('show');
-                showUserSection();
+
+                if (result.success && result.registered) {
+                    // 用戶已註冊，顯示主選單
+                    currentUser = result.userInfo;
+                    showMenuSection();
+                } else {
+                    // 用戶未註冊，顯示註冊頁面
+                    showRegisterSection();
+                }
 
             } catch (error) {
                 console.error('檢查註冊狀態錯誤:', error);
@@ -706,137 +770,227 @@
             }
         }
 
-        // 用戶表單提交
-        document.getElementById('userForm').addEventListener('submit', async function(e) {
+        // 顯示註冊區段
+        function showRegisterSection() {
+            // 設定用戶顯示
+            document.getElementById('unregisteredLineName').textContent = liffData.displayName;
+            document.getElementById('unregisteredUserAvatar').textContent = liffData.displayName.charAt(0).toUpperCase();
+            
+            // 顯示註冊區段
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById('registerSection').classList.add('active');
+        }
+
+        // 顯示主選單區段
+        function showMenuSection() {
+            // 設定用戶顯示
+            document.getElementById('registeredLineName').textContent = liffData.displayName;
+            document.getElementById('registeredRealName').textContent = currentUser.realName || '未設定';
+            document.getElementById('registeredUserAvatar').textContent = liffData.displayName.charAt(0).toUpperCase();
+            
+            // 顯示主選單區段
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById('menuSection').classList.add('active');
+        }
+
+        // 顯示修改資料區段
+        function showModifySection() {
+            // 設定用戶顯示
+            document.getElementById('modifyLineName').textContent = liffData.displayName;
+            document.getElementById('modifyUserAvatar').textContent = liffData.displayName.charAt(0).toUpperCase();
+            document.getElementById('modifyRealName').value = currentUser.realName || '';
+            
+            // 顯示修改區段
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById('modifySection').classList.add('active');
+        }
+
+        // 顯示繳費區段
+        function showPaymentSection() {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById('paymentSection').classList.add('active');
+        }
+
+        // 註冊表單提交
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const realName = document.getElementById('realName').value.trim();
+            const realName = document.getElementById('registerRealName').value.trim();
             
             if (!realName) {
                 alert('請輸入真實姓名');
                 return;
             }
 
-            try {
-                document.getElementById('confirmUserBtn').disabled = true;
-                document.getElementById('confirmUserBtn').textContent = '處理中...';
-
-                const response = await fetch(`${API_BASE_URL}?action=register&data=${encodeURIComponent(JSON.stringify({
-                    userId: liffData.userId,
-                    lineDisplayName: liffData.displayName,
-                    realName: realName,
-                    liffContext: liff.getContext(),
-                    liffEnvironment: liff.getOS(),
-                    timestamp: new Date().toISOString()
-                }))}`);
-                
-                const result = await response.json();
-                console.log('註冊結果:', result);
-
-                if (result.success) {
-                    currentUser = result.userInfo;
-                    
-                    // 顯示成功訊息
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'success';
-                    successDiv.textContent = result.message;
-                    document.getElementById('userForm').appendChild(successDiv);
-                    
-                    // 3秒後載入訂單
-                    setTimeout(async () => {
-                        await loadUserOrders();
-                    }, 2000);
-                    
-                } else {
-                    throw new Error(result.message);
-                }
-
-            } catch (error) {
-                console.error('用戶註冊錯誤:', error);
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'error';
-                errorDiv.textContent = '註冊失敗: ' + error.message;
-                document.getElementById('userForm').appendChild(errorDiv);
-            } finally {
-                document.getElementById('confirmUserBtn').disabled = false;
-                document.getElementById('confirmUserBtn').textContent = '✅ 確認資料';
-            }
+            await submitRegistration(realName);
         });
 
-        async function loadUserOrders() {
-            try {
-                const response = await fetch(`${API_BASE_URL}?action=orders&data=${encodeURIComponent(JSON.stringify({
-                    userId: liffData.userId
-                }))}`);
-                
-                const result = await response.json();
-                console.log('訂單資料:', result);
-
-                if (result.success) {
-                    userOrders = result.orders;
-                    displayOrders(result.orders);
-                    populatePaymentOrderSelect(result.orders);
-                    showOrdersSection();
-                } else {
-                    throw new Error(result.message);
-                }
-
-            } catch (error) {
-                console.error('載入訂單錯誤:', error);
-                document.getElementById('ordersList').innerHTML = 
-                    '<div class="error">載入訂單失敗: ' + error.message + '</div>';
-                showOrdersSection();
-            }
-        }
-
-        function displayOrders(orders) {
-            let html = '';
-            let grandTotal = 0;
+        // 修改表單提交
+        document.getElementById('modifyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            if (orders.length === 0) {
-                html = '<div class="info">暫無訂單記錄，請聯繫管理員確認</div>';
-            } else {
-                orders.forEach(order => {
-                    const statusClass = order.paymentStatus === '已付款' ? 'status-paid' : 'status-pending';
-                    const statusText = order.paymentStatus === '已付款' ? '✅ 已付款' : '⏳ 待付款';
-                    
-                    html += `
-                        <div class="order-item">
-                            <div class="order-header">
-                                <h3>📦 訂單 #${order.orderId}</h3>
-                                <span class="status-badge ${statusClass}">${statusText}</span>
-                            </div>
-                            
-                            <div class="product-info">
-                                <div class="product-name">
-                                    ${order.productName}
-                                </div>
-                                
-                                <div class="order-details">
-                                    <div class="detail-row">
-                                        <span class="label">單價:</span>
-                                        <span class="value">NT$ ${order.unitPrice.toLocaleString()}</span>
-                                    </div>
-                                    <div class="detail-row">
-                                        <span class="label">數量:</span>
-                                        <span class="value">${order.quantity}</span>
-                                    </div>
-                                    <div class="detail-row total-row">
-                                        <span class="label">小計:</span>
-                                        <span class="value total-amount">NT$ ${order.totalAmount.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="order-date">
-                                    訂單日期: ${order.orderDate}
-                                </div>
-                            </div>
-                            
-                                  ${order.paymentStatus !== '已付款' ? 
-                                      `<button class="btn btn-primary" style="margin-top: 15px;" onclick="showPaymentSection('${order.orderId}')">
-                                          💳 立即繳費
-                                      </button>` : ''
-                                  }
+            const realName = document.getElementById('modifyRealName').value.trim();
+            
+              if (!realName) {
+                  alert('請輸入真實姓名');
+                  return;
+              }
+
+              await submitRegistration(realName, true);
+          });
+
+          // 提交註冊/修改資料
+          async function submitRegistration(realName, isModify = false) {
+              try {
+                  const btnId = isModify ? 'modifyBtn' : 'registerBtn';
+                  const btn = document.getElementById(btnId);
+                  
+                  btn.disabled = true;
+                  btn.textContent = '處理中...';
+
+                  const response = await fetch(`${API_BASE_URL}?action=register&data=${encodeURIComponent(JSON.stringify({
+                      userId: liffData.userId,
+                      lineDisplayName: liffData.displayName,
+                      realName: realName,
+                      isModify: isModify,
+                      liffContext: liff.getContext(),
+                      timestamp: new Date().toISOString()
+                  }))}`);
+                  
+                  const result = await response.json();
+                  console.log('註冊/修改結果:', result);
+
+                  if (result.success) {
+                      currentUser = result.userInfo;
+                      
+                      // 顯示成功訊息
+                      const successDiv = document.createElement('div');
+                      successDiv.className = 'success';
+                      successDiv.textContent = result.message;
+                      
+                      const form = document.getElementById(isModify ? 'modifyForm' : 'registerForm');
+                      form.appendChild(successDiv);
+                      
+                      // 2秒後跳轉到主選單
+                      setTimeout(() => {
+                          showMenuSection();
+                      }, 2000);
+                      
+                  } else {
+                      throw new Error(result.message);
+                  }
+
+              } catch (error) {
+                  console.error('註冊/修改錯誤:', error);
+                  const errorDiv = document.createElement('div');
+                  errorDiv.className = 'error';
+                  errorDiv.textContent = '操作失敗: ' + error.message;
+                  
+                  const form = document.getElementById(isModify ? 'modifyForm' : 'registerForm');
+                  form.appendChild(errorDiv);
+              } finally {
+                  const btnId = isModify ? 'modifyBtn' : 'registerBtn';
+                  const btn = document.getElementById(btnId);
+                  btn.disabled = false;
+                  btn.textContent = isModify ? '✅ 確認修改' : '📝 確認送出';
+              }
+          }
+
+          // 載入用戶訂單
+          async function loadUserOrders() {
+              try {
+                  // 顯示載入狀態
+                  document.getElementById('ordersList').innerHTML = 
+                      '<div class="loading show"><div class="spinner"></div><div>載入訂單中...</div></div>';
+                  
+                  showOrdersSection();
+
+                  const response = await fetch(`${API_BASE_URL}?action=orders&data=${encodeURIComponent(JSON.stringify({
+                      lineDisplayName: liffData.displayName,
+                      realName: currentUser.realName
+                  }))}`);
+                  
+                  const result = await response.json();
+                  console.log('訂單資料:', result);
+
+                  if (result.success) {
+                      userOrders = result.orders;
+                      displayOrders(result.orders);
+                  } else {
+                      throw new Error(result.message);
+                  }
+
+              } catch (error) {
+                  console.error('載入訂單錯誤:', error);
+                  document.getElementById('ordersList').innerHTML = 
+                      '<div class="error">載入訂單失敗: ' + error.message + '</div>';
+              }
+          }
+
+          // 顯示訂單列表區段
+          function showOrdersSection() {
+              // 設定用戶顯示
+              document.getElementById('orderLineName').textContent = liffData.displayName;
+              document.getElementById('orderRealName').textContent = currentUser.realName;
+              document.getElementById('orderUserAvatar').textContent = liffData.displayName.charAt(0).toUpperCase();
+              
+              document.querySelectorAll('.section').forEach(section => {
+                  section.classList.remove('active');
+              });
+              document.getElementById('ordersSection').classList.add('active');
+          }
+
+          // 顯示訂單資料
+          function displayOrders(orders) {
+              let html = '';
+              let grandTotal = 0;
+              
+              if (orders.length === 0) {
+                  html = '<div class="info">暫無訂單記錄，請聯繫管理員確認</div>';
+              } else {
+                  orders.forEach(order => {
+                      const statusClass = order.paymentStatus === '已付款' ? 'status-paid' : 'status-pending';
+                      const statusText = order.paymentStatus === '已付款' ? '✅ 已付款' : '⏳ 待付款';
+                      
+                      html += `
+                          <div class="order-item">
+                              <div class="order-header">
+                                  <h3>📦 訂單 #${order.orderId}</h3>
+                                  <span class="status-badge ${statusClass}">${statusText}</span>
+                              </div>
+                              
+                              <div class="product-info">
+                                  <div class="product-name">
+                                      ${order.productName}
+                                  </div>
+                                  
+                                  <div class="order-details">
+                                      <div class="detail-row">
+                                          <span class="label">單價:</span>
+                                          <span class="value">NT$ ${order.unitPrice.toLocaleString()}</span>
+                                      </div>
+                                      <div class="detail-row">
+                                          <span class="label">數量:</span>
+                                          <span class="value">${order.quantity}</span>
+                                      </div>
+                                      <div class="detail-row total-row">
+                                          <span class="label">小計:</span>
+                                          <span class="value total-amount">NT$ ${order.totalAmount.toLocaleString()}</span>
+                                      </div>
+                                  </div>
+                                  
+                                  <div class="order-date">
+                                      訂單日期: ${order.orderDate}
+                                  </div>
+                              </div>
                           </div>
                       `;
                       grandTotal += order.totalAmount;
@@ -858,37 +1012,6 @@
               }
               
               document.getElementById('ordersList').innerHTML = html;
-              
-              // 更新確認用戶顯示區
-              document.getElementById('confirmedLineName').textContent = liffData.displayName;
-              document.getElementById('confirmedRealName').textContent = currentUser.realName || '未設定';
-              document.getElementById('confirmedUserAvatar').textContent = liffData.displayName.charAt(0).toUpperCase();
-          }
-
-          function populatePaymentOrderSelect(orders) {
-              const select = document.getElementById('paymentOrderSelect');
-              select.innerHTML = '<option value="">請選擇要繳費的訂單</option>';
-              
-              orders.forEach(order => {
-                  if (order.paymentStatus !== '已付款') {
-                      const option = document.createElement('option');
-                      option.value = order.orderId;
-                      option.textContent = `${order.orderId} - ${order.productName} (NT$ ${order.totalAmount.toLocaleString()})`;
-                      select.appendChild(option);
-                  }
-              });
-          }
-
-          // 繳費相關功能
-          function showPaymentSection(orderId = '') {
-              if (orderId) {
-                  document.getElementById('paymentOrderSelect').value = orderId;
-              }
-              
-              document.querySelectorAll('.section').forEach(section => {
-                  section.classList.remove('active');
-              });
-              document.getElementById('paymentSection').classList.add('active');
           }
 
           // 繳費方式選擇
@@ -902,21 +1025,30 @@
                   // 設定當前選中
                   this.classList.add('selected');
                   this.querySelector('input[type="radio"]').checked = true;
+                  
+                  // 顯示/隱藏轉帳提示
+                  const transferNote = document.getElementById('transferNote');
+                  if (this.dataset.method === '轉帳') {
+                      transferNote.classList.add('show');
+                  } else {
+                      transferNote.classList.remove('show');
+                  }
               });
           });
 
-          async function submitPayment() {
-              const orderId = document.getElementById('paymentOrderSelect').value;
+          // 確認繳費方式
+          async function confirmPayment() {
               const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value;
               const paymentNote = document.getElementById('paymentNote').value.trim();
 
-              if (!orderId) {
-                  alert('請選擇要繳費的訂單');
+              if (!paymentMethod) {
+                  alert('請選擇繳費方式');
                   return;
               }
 
-              if (!paymentMethod) {
-                  alert('請選擇繳費方式');
+              // 轉帳方式需要備註
+              if (paymentMethod === '轉帳' && !paymentNote) {
+                  alert('轉帳方式請提供帳號後5碼等相關資訊');
                   return;
               }
 
@@ -927,7 +1059,7 @@
 
                   const response = await fetch(`${API_BASE_URL}?action=submit-payment&data=${encodeURIComponent(JSON.stringify({
                       userId: liffData.userId,
-                      orderId: orderId,
+                      lineDisplayName: liffData.displayName,
                       realName: currentUser.realName,
                       paymentMethod: paymentMethod,
                       paymentNote: paymentNote,
@@ -943,9 +1075,9 @@
                       const successDiv = document.createElement('div');
                       successDiv.className = 'success';
                       successDiv.innerHTML = `
-                          <strong>✅ 繳費證明提交成功！</strong><br>
+                          <strong>✅ 繳費資訊提交成功！</strong><br>
                           我們已收到您的繳費資訊，將於1-2個工作天內完成審核。<br>
-                          <small>訂單編號: ${orderId}</small>
+                          <small>繳費方式: ${paymentMethod}</small>
                       `;
                       
                       document.querySelector('.payment-form').insertBefore(
@@ -954,7 +1086,6 @@
                       );
 
                       // 清空表單
-                      document.getElementById('paymentOrderSelect').value = '';
                       document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
                           radio.checked = false;
                       });
@@ -962,10 +1093,11 @@
                           method.classList.remove('selected');
                       });
                       document.getElementById('paymentNote').value = '';
+                      document.getElementById('transferNote').classList.remove('show');
 
-                      // 3秒後返回訂單列表
+                      // 3秒後返回主選單
                       setTimeout(() => {
-                          loadUserOrders();
+                          showMenuSection();
                       }, 3000);
                       
                   } else {
@@ -973,7 +1105,7 @@
                   }
 
               } catch (error) {
-                  console.error('提交繳費證明錯誤:', error);
+                  console.error('提交繳費資訊錯誤:', error);
                   const errorDiv = document.createElement('div');
                   errorDiv.className = 'error';
                   errorDiv.textContent = '提交失敗: ' + error.message;
@@ -984,23 +1116,8 @@
               } finally {
                   const submitBtn = document.querySelector('#paymentSection .btn-primary');
                   submitBtn.disabled = false;
-                  submitBtn.textContent = '📤 提交繳費證明';
+                  submitBtn.textContent = '✅ 確認繳費方式送出';
               }
-          }
-
-          // 頁面切換功能
-          function showUserSection() {
-              document.querySelectorAll('.section').forEach(section => {
-                  section.classList.remove('active');
-              });
-              document.getElementById('userSection').classList.add('active');
-          }
-
-          function showOrdersSection() {
-              document.querySelectorAll('.section').forEach(section => {
-                  section.classList.remove('active');
-              });
-              document.getElementById('ordersSection').classList.add('active');
           }
 
           // 錯誤處理
@@ -1011,9 +1128,9 @@
           // 頁面離開前確認
           window.addEventListener('beforeunload', function(e) {
               const paymentNote = document.getElementById('paymentNote').value.trim();
-              const selectedOrder = document.getElementById('paymentOrderSelect').value;
+              const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
               
-              if (paymentNote || selectedOrder) {
+              if (paymentNote || selectedPayment) {
                   e.preventDefault();
                   e.returnValue = '';
               }
