@@ -371,6 +371,61 @@
           color: #856404;
           margin-bottom: 10px;
       }
+
+      .order-summary {
+          background: #e8f5e8;
+          padding: 20px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          border-left: 4px solid #00B900;
+      }
+
+      .order-summary h3 {
+          color: #00B900;
+          margin-bottom: 15px;
+          text-align: center;
+      }
+
+      .summary-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 0;
+          border-bottom: 1px solid #d4edda;
+          font-size: 14px;
+      }
+
+      .summary-item:last-child {
+          border-bottom: none;
+          font-weight: bold;
+          font-size: 16px;
+          color: #00B900;
+      }
+
+      .product-list {
+          background: #f8f9fa;
+          padding: 15px;
+          border-radius: 8px;
+          margin-bottom: 15px;
+      }
+
+      .product-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 5px 0;
+          font-size: 14px;
+      }
+
+      .product-name {
+          font-weight: 600;
+          color: #333;
+      }
+
+      .product-details {
+          text-align: right;
+          color: #666;
+      }
   </style>
 </head>
 <body>
@@ -475,7 +530,7 @@
       // 設定區域 - 請修改為您的實際值
       const CONFIG = {
           LIFF_ID: '1657285806-2bmkYWkN', // 請替換為實際的 LIFF ID
-          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbw7whxvJooC-ffnRje2I3j_qS5ItM2SfrEYrrMZM-mUp59KInFDFJm8IZysuk5aijGi/exec', // 請替換為 GAS 部署網址
+          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbztaoz3deH2K1_cmfHneSnuGn176k5u8ViCxf8mRP74zT5oJNOWiJpAPYf9g6dwn-Fw/exec', // 請替換為 GAS 部署網址
           DEBUG_MODE: true, // 開啟除錯模式
           DEMO_MODE: false // 示範模式（當 API 無法使用時）
       };
@@ -487,6 +542,7 @@
       let isRegistered = false;
       let userRegistrationData = null;
       let demoMode = false;
+      let currentOrderSummary = null; // 儲存當前訂單摘要
 
       // 除錯函數
       function debugLog(message, data = null) {
@@ -780,70 +836,70 @@
               // 這裡我們假設請求成功並返回示範資料
               return await handleDemoResponse(path, data);
               
-          } catch (error) {
-              debugLog('API 呼叫失敗，切換到示範模式', error);
-              console.error(`API 呼叫失敗 (${path}):`, error);
-              
-              // 啟用示範模式
-              enableDemoMode();
-              return await handleDemoResponse(path, data);
-          }
-      }
+            } catch (error) {
+                debugLog('API 呼叫失敗，切換到示範模式', error);
+                console.error(`API 呼叫失敗 (${path}):`, error);
+                
+                // 啟用示範模式
+                enableDemoMode();
+                return await handleDemoResponse(path, data);
+            }
+        }
 
-      // 啟用示範模式
-      function enableDemoMode() {
-          if (!demoMode) {
-              demoMode = true;
-              document.getElementById('demoMode').style.display = 'block';
-              debugLog('啟用示範模式');
-          }
-      }
+        // 啟用示範模式
+        function enableDemoMode() {
+            if (!demoMode) {
+                demoMode = true;
+                document.getElementById('demoMode').style.display = 'block';
+                debugLog('啟用示範模式');
+            }
+        }
 
-      // 處理示範回應
-      async function handleDemoResponse(path, data) {
-          debugLog(`示範模式回應: ${path}`, data);
-          
-          switch (path) {
-              case 'check-registration':
-                  // 模擬未註冊狀態
-                  return {
-                      success: true,
-                      registered: false,
-                      message: '用戶未註冊'
-                  };
-              
-              case 'register':
-                  // 模擬註冊成功
-                  return {
-                      success: true,
-                      message: '註冊成功',
-                      userInfo: data
-                  };
-              
-              case 'orders':
-                  // 模擬訂單資料
-                  return {
-                      success: true,
-                        orders: [
-                            {
-                                orderId: 'ORD001',
-                                productName: '示範商品 A',
-                                unitPrice: 1200,
-                                quantity: 2,
-                                totalAmount: 2400,
-                                paymentStatus: '待付款',
-                                orderDate: '2024-01-15'
-                            },
-                            {
-                                orderId: 'ORD002',
-                                productName: '示範商品 B',
-                                unitPrice: 800,
-                                quantity: 1,
-                                totalAmount: 800,
-                                paymentStatus: '已付款',
-                                orderDate: '2024-01-10'
-                            }
-                        ]
+        // 處理示範回應
+        async function handleDemoResponse(path, data) {
+            debugLog(`示範模式回應: ${path}`, data);
+            
+            switch (path) {
+                case 'check-registration':
+                    // 模擬未註冊狀態
+                    return {
+                        success: true,
+                        registered: false,
+                        message: '用戶未註冊'
+                    };
+                
+                case 'register':
+                    // 模擬註冊成功
+                    return {
+                        success: true,
+                        message: '註冊成功',
+                        userInfo: data
+                    };
+                
+                case 'orders':
+                    // 模擬訂購清單資料 - 根據LINE名稱查詢
+                    return {
+                        success: true,
+                        orderSummary: {
+                            orderId: 'ORD-' + new Date().getTime(),
+                            lineName: userProfile.displayName,
+                            realName: userRegistrationData?.realName || '示範用戶',
+                            totalAmount: 3200,
+                            products: [
+                                {
+                                    productName: '示範商品 A',
+                                    quantity: 3,
+                                    unitPrice: 800,
+                                    totalPrice: 2400
+                                },
+                                {
+                                    productName: '示範商品 B',
+                                    quantity: 1,
+                                    unitPrice: 800,
+                                    totalPrice: 800
+                                }
+                            ]
+                        }
                     };
                 
                 case 'submit-payment':
@@ -926,11 +982,11 @@
             document.getElementById('paymentContent').innerHTML = `
                 <h2>💳 繳費回報</h2>
                 
-                <div class="form-group">
-                    <label for="orderSelect">選擇訂單</label>
-                    <select id="orderSelect">
-                        <option value="">請選擇要繳費的訂單</option>
-                    </select>
+                <div id="orderSummarySection" style="display: none;">
+                    <div class="order-summary">
+                        <h3>📋 訂單摘要</h3>
+                        <div id="orderSummaryDetails"></div>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -958,9 +1014,11 @@
                     <input type="text" id="paymentNote" placeholder="轉帳帳號後5碼或其他說明">
                 </div>
                 
-                <button class="btn" onclick="submitPayment()">提交繳費證明</button>
+                <button class="btn" onclick="submitPayment()" id="submitPaymentBtn" disabled>提交繳費證明</button>
             `;
-            loadOrdersForPayment();
+            
+            // 載入訂單摘要
+            loadOrderSummaryForPayment();
         }
 
         // 標籤頁切換 - 修正版本
@@ -987,7 +1045,7 @@
             if (tabName === 'orders' && isRegistered) {
                 loadOrders();
             } else if (tabName === 'payment' && isRegistered) {
-                loadOrdersForPayment();
+                loadOrderSummaryForPayment();
             }
         }
 
@@ -1050,7 +1108,7 @@
             }
         });
 
-        // 載入訂單
+        // 載入訂單 - 根據LINE名稱查詢並合併相同產品
         async function loadOrders() {
             if (!isRegistered) return;
             
@@ -1058,11 +1116,14 @@
             document.getElementById('ordersList').innerHTML = '<div class="loading">載入中...</div>';
             
             try {
-                const result = await callAPI('orders', { userId: userId });
+                const result = await callAPI('orders', { 
+                    lineName: userProfile.displayName 
+                });
                 
-                if (result.success && result.orders.length > 0) {
-                    debugLog('訂單載入成功', result.orders);
-                    displayOrders(result.orders);
+                if (result.success && result.orderSummary) {
+                    debugLog('訂單載入成功', result.orderSummary);
+                    currentOrderSummary = result.orderSummary;
+                    displayOrderSummary(result.orderSummary);
                 } else {
                     debugLog('無訂單記錄');
                     document.getElementById('ordersList').innerHTML = '<div class="error">暫無訂單記錄</div>';
@@ -1074,45 +1135,46 @@
             }
         }
 
-        function displayOrders(orders) {
-            let html = '';
-            let totalAmount = 0;
-            
-            orders.forEach(order => {
-                const statusClass = order.paymentStatus === '已付款' ? 'status-paid' : 'status-pending';
-                const statusText = order.paymentStatus === '已付款' ? '已付款' : '待付款';
+        // 顯示訂單摘要
+        function displayOrderSummary(orderSummary) {
+            let html = `
+                <div class="order-summary">
+                    <h3>📋 訂單摘要</h3>
+                    <div class="summary-item">
+                        <span>訂單ID:</span>
+                        <span>${orderSummary.orderId}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>LINE名稱:</span>
+                        <span>${orderSummary.lineName}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>真實姓名:</span>
+                        <span>${orderSummary.realName}</span>
+                    </div>
+                </div>
                 
+                <div class="product-list">
+                    <h4>📦 產品清單</h4>
+            `;
+            
+            orderSummary.products.forEach(product => {
                 html += `
-                    <div class="order-item">
-                        <h3>訂單 #${order.orderId}</h3>
-                        <div class="order-detail">
-                            <span>產品名稱:</span>
-                            <span>${order.productName}</span>
-                        </div>
-                        <div class="order-detail">
-                            <span>單價:</span>
-                            <span>NT$ ${order.unitPrice.toLocaleString()}</span>
-                        </div>
-                        <div class="order-detail">
-                            <span>數量:</span>
-                            <span>${order.quantity}</span>
-                        </div>
-                        <div class="order-detail">
-                            <span>狀態:</span>
-                            <span class="status-badge ${statusClass}">${statusText}</span>
-                        </div>
-                        <div class="total-amount">
-                            合計: NT$ ${order.totalAmount.toLocaleString()}
+                    <div class="product-item">
+                        <div class="product-name">${product.productName}</div>
+                        <div class="product-details">
+                            ${product.quantity} × NT$ ${product.unitPrice.toLocaleString()} = NT$ ${product.totalPrice.toLocaleString()}
                         </div>
                     </div>
                 `;
-                totalAmount += order.totalAmount;
             });
             
             html += `
+                </div>
+                
                 <div class="order-item" style="background: #e8f5e8; border-left-color: #00B900;">
                     <div class="total-amount" style="font-size: 20px; color: #00B900;">
-                        總金額: NT$ ${totalAmount.toLocaleString()}
+                        總金額: NT$ ${orderSummary.totalAmount.toLocaleString()}
                     </div>
                 </div>
             `;
@@ -1120,35 +1182,75 @@
             document.getElementById('ordersList').innerHTML = html;
         }
 
-        // 載入訂單供繳費選擇
-        async function loadOrdersForPayment() {
+        // 載入訂單摘要供繳費使用
+        async function loadOrderSummaryForPayment() {
             if (!isRegistered) return;
             
-            debugLog('載入繳費訂單選項');
+            debugLog('載入繳費訂單摘要');
             
             try {
-                const result = await callAPI('orders', { userId: userId });
+                const result = await callAPI('orders', { 
+                    lineName: userProfile.displayName 
+                });
                 
-                if (result.success && result.orders.length > 0) {
-                    const select = document.getElementById('orderSelect');
-                    if (select) {
-                        select.innerHTML = '<option value="">請選擇要繳費的訂單</option>';
-                        
-                        result.orders.forEach(order => {
-                            if (order.paymentStatus !== '已付款') {
-                                select.innerHTML += `
-                                    <option value="${order.orderId}">
-                                        ${order.orderId} - ${order.productName} (NT$ ${order.totalAmount.toLocaleString()})
-                                    </option>
-                                `;
-                            }
-                        });
+                if (result.success && result.orderSummary) {
+                    currentOrderSummary = result.orderSummary;
+                    displayOrderSummaryForPayment(result.orderSummary);
+                    
+                    // 啟用提交按鈕
+                    const submitBtn = document.getElementById('submitPaymentBtn');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                } else {
+                    debugLog('無訂單記錄');
+                    const summarySection = document.getElementById('orderSummarySection');
+                    if (summarySection) {
+                        summarySection.innerHTML = '<div class="error">暫無待繳費訂單</div>';
+                        summarySection.style.display = 'block';
                     }
                 }
             } catch (error) {
-                debugLog('載入繳費訂單失敗', error);
-                console.error('載入繳費訂單失敗:', error);
+                debugLog('載入繳費訂單摘要失敗', error);
+                console.error('載入繳費訂單摘要失敗:', error);
             }
+        }
+
+        // 顯示繳費用的訂單摘要
+        function displayOrderSummaryForPayment(orderSummary) {
+            let html = `
+                <div class="summary-item">
+                    <span>訂單ID:</span>
+                    <span>${orderSummary.orderId}</span>
+                </div>
+                <div class="summary-item">
+                    <span>LINE名稱:</span>
+                    <span>${orderSummary.lineName}</span>
+                </div>
+                <div class="summary-item">
+                    <span>真實姓名:</span>
+                    <span>${orderSummary.realName}</span>
+                </div>
+            `;
+            
+            orderSummary.products.forEach(product => {
+                html += `
+                    <div class="summary-item">
+                        <span>${product.productName}:</span>
+                        <span>${product.quantity} × NT$ ${product.unitPrice.toLocaleString()}</span>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="summary-item">
+                    <span>應繳金額:</span>
+                    <span>NT$ ${orderSummary.totalAmount.toLocaleString()}</span>
+                </div>
+            `;
+            
+            document.getElementById('orderSummaryDetails').innerHTML = html;
+            document.getElementById('orderSummarySection').style.display = 'block';
         }
 
         // 處理檔案上傳
@@ -1171,15 +1273,14 @@
         async function submitPayment() {
             debugLog('提交繳費證明');
             
-            const orderId = document.getElementById('orderSelect').value;
+            if (!currentOrderSummary) {
+                showError('無法取得訂單資訊，請重新載入');
+                return;
+            }
+            
             const paymentMethod = document.getElementById('paymentMethod').value;
             const paymentNote = document.getElementById('paymentNote').value;
             const paymentProof = document.getElementById('paymentProof').files[0];
-            
-            if (!orderId) {
-                showError('請選擇要繳費的訂單');
-                return;
-            }
             
             if (!paymentProof) {
                 showError('請上傳繳費證明');
@@ -1187,14 +1288,22 @@
             }
             
             const paymentData = {
-                userId: userId,
-                orderId: orderId,
+                orderId: currentOrderSummary.orderId,
+                lineName: currentOrderSummary.lineName,
+                realName: currentOrderSummary.realName,
+                paymentAmount: currentOrderSummary.totalAmount,
                 paymentMethod: paymentMethod,
                 paymentNote: paymentNote,
-                realName: userRegistrationData.realName
+                submittedAt: new Date().toISOString()
             };
             
             try {
+                // 顯示載入狀態
+                const submitBtn = document.getElementById('submitPaymentBtn');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = '提交中...';
+                submitBtn.disabled = true;
+                
                 const result = await callAPI('submit-payment', paymentData);
                 
                 if (result.success) {
@@ -1202,7 +1311,6 @@
                     showSuccess('繳費證明提交成功！我們會盡快處理您的申請。');
                     
                     // 清空表單
-                    document.getElementById('orderSelect').value = '';
                     document.getElementById('paymentNote').value = '';
                     document.getElementById('paymentProof').value = '';
                     
@@ -1215,16 +1323,24 @@
                     `;
                     uploadArea.style.background = '';
                     
-                    // 重新載入訂單
-                    loadOrdersForPayment();
+                    submitBtn.textContent = '已提交';
+                    submitBtn.disabled = true;
                 } else {
                     debugLog('繳費證明提交失敗', result);
                     showError(result.message || '提交失敗，請稍後再試');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
                 }
             } catch (error) {
                 debugLog('繳費證明提交失敗', error);
                 console.error('提交繳費證明失敗:', error);
                 showError('提交失敗，請稍後再試: ' + error.message);
+                
+                const submitBtn = document.getElementById('submitPaymentBtn');
+                if (submitBtn) {
+                    submitBtn.textContent = '提交繳費證明';
+                    submitBtn.disabled = false;
+                }
             }
         }
 
