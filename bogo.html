@@ -1102,6 +1102,27 @@
   </div>
 
   <script>
+<!-- 更穩定的 LIFF SDK 載入 -->    
+
+        // 確保 SDK 完全載入後再初始化
+        window.addEventListener('load', function() {
+            if (typeof liff !== 'undefined') {
+                console.log('LIFF SDK 載入成功');
+                initializeLiff();
+            } else {
+                console.error('LIFF SDK 載入失敗');
+                // 嘗試重新載入
+                setTimeout(() => {
+                    if (typeof liff !== 'undefined') {
+                        initializeLiff();
+                    } else {
+                        showError('LIFF SDK 載入失敗，請重新整理頁面');
+                    }
+                }, 2000);
+            }
+        });
+
+
       // ==================== 配置與全域變數 ====================
       const CONFIG = {
           API_BASE_URL: 'https://script.google.com/macros/s/AKfycbzVSQahECe4YMUfEmA_iYsUBr4tLwWts-CdGhOJee1nFFylLRezRCde6IRhp7F6TSNg/exec', // 請替換為您的 GAS 部署 URL
@@ -1121,6 +1142,8 @@
       let isOnline = navigator.onLine;
 
       // ==================== 工具類別 ====================
+
+
 
       /**
        * 本地快取管理器
