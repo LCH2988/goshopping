@@ -1056,7 +1056,7 @@
 
       <script>
           // 全域變數
-          const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyx0l8RIwrGXQiHH18CS3lUAjsvp8k48scPDDf84Ekq7ghTsiT0bdh9TTiVuwzuhzFc/exec'; // 請替換為您的 GAS 部署 URL
+          const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyESTwQLa7Yn-wGoi09HinBtCI0YKsnQsHizc-hhCBGIDUnnbGuULNfv0ZArpLmo4Jk/exec'; // 請替換為您的 GAS 部署 URL
           let liff;
           let liffData = {};
           let currentUser = null;
@@ -1066,11 +1066,20 @@
           let currentFilter = 'all';
 
           // LIFF 初始化
+          // 修改初始化函數
           async function initializeLiff() {
               try {
+                  // 檢查 LIFF SDK 是否載入
+                  if (typeof liff === 'undefined') {
+                      throw new Error('LIFF SDK 未載入');
+                  }
+
+                  console.log('開始初始化 LIFF...');
+                  
                   await liff.init({ liffId: '1657285806-2bmkYWkN' }); // 請替換為您的 LIFF ID
                   
                   if (!liff.isLoggedIn()) {
+                      console.log('用戶未登入，導向登入頁面');
                       liff.login();
                       return;
                   }
@@ -1091,9 +1100,125 @@
               } catch (error) {
                   console.error('LIFF 初始化錯誤:', error);
                   document.getElementById('loading').innerHTML = 
-                      '<div class="error">初始化失敗，請重新整理頁面</div>';
+                      `<div class="error">
+                          <h3>初始化失敗</h3>
+                          <p>錯誤訊息: ${error.message}</p>
+                          <p>請檢查：</p>
+                          <ul style="text-align: left; margin: 10px 0;">
+                              <li>LIFF ID 是否正確設定</li>
+                              <li>是否在 LINE 環境中開啟</li>
+                              <li>網路連線是否正常</li>
+                          </ul>
+                          <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #FF6B6B; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                              重新載入頁面
+                          </button>
+                      </div>`;
               }
           }
+
+          // 修改頁面載入事件
+          document.addEventListener('DOMContentLoaded', () => {
+              console.log('頁面載入完成');
+              
+              // 等待一小段時間確保 LIFF SDK 完全載入
+              setTimeout(() => {
+                  initializeLiff();
+              }, 100);
+          });
+
+          // 也可以監聽 window.onload 事件作為備用
+          window.addEventListener('load', () => {
+              console.log('所有資源載入完成');
+              
+              // 如果 LIFF 還沒初始化，再試一次
+              if (typeof liffData === 'undefined' || !liffData.userId) {
+                  setTimeout(() => {
+                      if (typeof liff !== 'undefined') {
+                          initializeLiff();
+                      }
+                  }, 500);
+              }
+          });
+
+// 在全域範圍加入偵錯資訊
+console.log('檢查 LIFF SDK 載入狀態:', typeof liff);
+
+// 加入更詳細的錯誤處理
+function handleLiffError(error) {
+    console.error('LIFF 錯誤詳情:', error);
+    
+    let errorMessage = '初始化失敗';
+    let suggestions = [];
+    
+    if (error.message.includes('LIFF SDK')) {
+        errorMessage = 'LIFF SDK 載入失敗';
+        suggestions = [
+            '請檢查網路連線',
+            '確認在 LINE 應用程式中開啟',
+            '重新載入頁面'
+        ];
+    } else if (error.message.includes('liff id')) {
+        errorMessage = 'LIFF ID 設定錯誤';
+        suggestions = [
+            '請檢查 LIFF ID 是否正確',
+            '確認 LIFF 應用程式已啟用'
+        ];
+    } else if (error.message.includes('login')) {
+        errorMessage = '登入失敗';
+        suggestions = [
+            '請重新登入 LINE',
+            '檢查應用程式權限'
+        ];
+    }
+    
+    document.getElementById('loading').innerHTML = 
+        `<div class="error">
+            <h3>${errorMessage}</h3>
+            <p>錯誤詳情: ${error.message}</p>
+            <div style="margin: 15px 0;">
+                <strong>建議解決方案:</strong>
+                <ul style="text-align: left; margin: 10px 0;">
+                    ${suggestions.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+            </div>
+            <button onclick="location.reload()" class="btn btn-primary">
+                🔄 重新載入頁面
+            </button>
+        </div>`;
+}
+
+// 修改初始化函數使用新的錯誤處理
+async function initializeLiff() {
+    try {
+        if (typeof liff === 'undefined') {
+            throw new Error('LIFF SDK 未載入，請確認在 LINE 環境中開啟');
+        }
+
+        console.log('LIFF SDK 載入成功，開始初始化...');
+        
+        await liff.init({ liffId: '1657285806-2bmkYWkN' });
+        
+        if (!liff.isLoggedIn()) {
+            console.log('用戶未登入，導向登入頁面');
+            liff.login();
+            return;
+        }
+
+        const profile = await liff.getProfile();
+        liffData = {
+            userId: profile.userId,
+            displayName: profile.displayName,
+            pictureUrl: profile.pictureUrl
+        };
+
+        console.log('LIFF 初始化成功:', liffData);
+        await checkRegistrationStatus();
+
+    } catch (error) {
+        handleLiffError(error);
+    }
+}
+
 
           // 檢查註冊狀態
           async function checkRegistrationStatus() {
