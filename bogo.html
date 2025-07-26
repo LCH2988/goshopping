@@ -1104,23 +1104,23 @@
   <script>
 <!-- 更穩定的 LIFF SDK 載入 -->    
 
-        // 確保 SDK 完全載入後再初始化
-        window.addEventListener('load', function() {
-            if (typeof liff !== 'undefined') {
-                console.log('LIFF SDK 載入成功');
-                initializeLiff();
-            } else {
-                console.error('LIFF SDK 載入失敗');
-                // 嘗試重新載入
-                setTimeout(() => {
-                    if (typeof liff !== 'undefined') {
-                        initializeLiff();
-                    } else {
-                        showError('LIFF SDK 載入失敗，請重新整理頁面');
-                    }
-                }, 2000);
-            }
-        });
+        // // 確保 SDK 完全載入後再初始化
+        // window.addEventListener('load', function() {
+        //     if (typeof liff !== 'undefined') {
+        //         console.log('LIFF SDK 載入成功');
+        //         initializeLiff();
+        //     } else {
+        //         console.error('LIFF SDK 載入失敗');
+        //         // 嘗試重新載入
+        //         setTimeout(() => {
+        //             if (typeof liff !== 'undefined') {
+        //                 initializeLiff();
+        //             } else {
+        //                 showError('LIFF SDK 載入失敗，請重新整理頁面');
+        //             }
+        //         }, 2000);
+        //     }
+        // });
 
 
       // ==================== 配置與全域變數 ====================
@@ -1351,35 +1351,27 @@
       /**
        * 初始化 LIFF
        */
-      async function initializeLiff() {
-          try {
-              showLoading('正在初始化 LIFF...');
-              
-              await liff.init({ liffId: CONFIG.LIFF_ID });
-              
-              if (!liff.isLoggedIn()) {
-                  liff.login();
-                  return;
+     // 在 initializeLiff 函數中加入更詳細的錯誤資訊
+          async function initializeLiff() {
+              try {
+                  console.log('開始初始化 LIFF...');
+                  console.log('LIFF ID:', CONFIG.LIFF_ID);
+                  
+                  await liff.init({ liffId: CONFIG.LIFF_ID });
+                  
+                  if (liff.isLoggedIn()) {
+                      console.log('用戶已登入');
+                      // 繼續處理...
+                  } else {
+                      console.log('用戶未登入，導向登入頁面');
+                      liff.login();
+                  }
+              } catch (error) {
+                  console.error('LIFF 初始化錯誤詳情:', error);
+                  showError(`LIFF 初始化失敗: ${error.message}`);
               }
-
-              // 取得用戶資料
-              const profile = await liff.getProfile();
-              liffData = {
-                  userId: profile.userId,
-                  displayName: profile.displayName,
-                  pictureUrl: profile.pictureUrl || null
-              };
-
-              console.log('LIFF 初始化成功:', liffData);
-              
-              // 檢查用戶註冊狀態
-              await checkUserRegistration();
-
-          } catch (error) {
-              ErrorHandler.handle(error, 'LIFF 初始化');
-              showError('LIFF 初始化失敗，請重新開啟應用程式');
           }
-      }
+
 
       /**
        * 檢查用戶註冊狀態
