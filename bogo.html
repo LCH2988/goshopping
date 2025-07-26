@@ -200,12 +200,38 @@
           padding: 15px;
           border-radius: 10px;
           margin-bottom: 20px;
-          text-align: center;
       }
       
       .user-info h3 {
           color: #00B900;
-          margin-bottom: 10px;
+          margin-bottom: 15px;
+          text-align: center;
+      }
+      
+      .info-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 0;
+          border-bottom: 1px solid #d4edda;
+          font-size: 14px;
+      }
+      
+      .info-item:last-child {
+          border-bottom: none;
+      }
+      
+      .info-label {
+          font-weight: 600;
+          color: #155724;
+          min-width: 80px;
+      }
+      
+      .info-value {
+          color: #333;
+          text-align: right;
+          word-break: break-all;
+          max-width: 200px;
       }
       
       .loading {
@@ -291,7 +317,46 @@
           font-family: monospace;
           font-size: 12px;
           border: 1px solid #dee2e6;
+          max-height: 200px;
+          overflow-y: auto;
       }
+
+      .liff-info {
+          background: #f0f8ff;
+          padding: 15px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          border-left: 4px solid #4169E1;
+      }
+
+      .liff-info h3 {
+          color: #4169E1;
+          margin-bottom: 15px;
+          text-align: center;
+      }
+
+      .profile-avatar {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          margin: 0 auto 15px;
+          display: block;
+          border: 3px solid #00B900;
+      }
+
+      .context-badge {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+      }
+
+      .context-utou { background: #e3f2fd; color: #1976d2; }
+      .context-group { background: #e8f5e8; color: #2e7d32; }
+      .context-room { background: #fff3e0; color: #f57c00; }
+      .context-square { background: #fce4ec; color: #c2185b; }
   </style>
 </head>
 <body>
@@ -308,12 +373,17 @@
               <span id="debugText"></span>
           </div>
 
+          <!-- LIFF 環境資訊 -->
+          <div id="liffInfo" class="liff-info" style="display: none;">
+              <h3>📱 LIFF 環境資訊</h3>
+              <div id="liffDetails"></div>
+          </div>
+
           <!-- 用戶資訊顯示 -->
           <div id="userInfo" class="user-info" style="display: none;">
-              <h3>👤 會員資訊</h3>
-              <p><strong>LINE 名稱:</strong> <span id="lineDisplayName"></span></p>
-              <p><strong>真實姓名:</strong> <span id="realName"></span></p>
-              <p><strong>註冊時間:</strong> <span id="registerTime"></span></p>
+              <h3>👤 用戶資訊</h3>
+              <img id="userAvatar" class="profile-avatar" style="display: none;">
+              <div id="userDetails"></div>
           </div>
           
           <!-- 標籤頁按鈕 -->
@@ -391,6 +461,8 @@
 
       let userId = null;
       let userProfile = null;
+      let liffContext = null;
+      let liffEnvironment = null;
       let isRegistered = false;
       let userRegistrationData = null;
 
@@ -407,6 +479,7 @@
                       debugText.innerHTML += `數據: ${JSON.stringify(data, null, 2)}<br>`;
                   }
                   debugText.innerHTML += '<br>';
+                  debugText.scrollTop = debugText.scrollHeight;
               }
           }
       }
@@ -424,6 +497,9 @@
               await liff.init({ liffId: CONFIG.LIFF_ID });
               debugLog('LIFF 初始化成功');
               
+              // 收集 LIFF 環境資訊
+              await collectLiffEnvironmentInfo();
+              
               if (liff.isLoggedIn()) {
                   debugLog('用戶已登入');
                   userProfile = await liff.getProfile();
@@ -433,6 +509,9 @@
                       userId: userId,
                       displayName: userProfile.displayName
                   });
+                  
+                  // 顯示用戶資訊
+                  displayUserInfo();
                   
                   // 檢查用戶是否已註冊
                   await checkUserRegistration();
@@ -445,6 +524,196 @@
               console.error('LIFF初始化失敗:', error);
               showError('系統初始化失敗，請重新開啟: ' + error.message);
           }
+      }
+
+      // 收集 LIFF 環境資訊
+      async function collectLiffEnvironmentInfo() {
+          try {
+              // 基本 LIFF 資訊
+              liffEnvironment = {
+                  version: liff.getVersion(),
+                  language: liff.getLanguage(),
+                  isInClient: liff.isInClient(),
+                  isLoggedIn: liff.isLoggedIn(),
+                  os: liff.getOS(),
+                  lineVersion: liff.getLineVersion()
+              };
+
+              // 取得 LIFF 上下文
+              liffContext = liff.getContext();
+              
+              debugLog('LIFF 環境資訊', liffEnvironment);
+              debugLog('LIFF 上下文', liffContext);
+              
+              // 顯示 LIFF 資訊
+              displayLiffInfo();
+              
+          } catch (error) {
+              debugLog('收集 LIFF 環境資訊失敗', error);
+              console.error('收集 LIFF 環境資訊失敗:', error);
+          }
+      }
+
+      // 顯示 LIFF 環境資訊
+      function displayLiffInfo() {
+          const liffInfoDiv = document.getElementById('liffInfo');
+          const liffDetailsDiv = document.getElementById('liffDetails');
+          
+          if (!liffInfoDiv || !liffDetailsDiv) return;
+          
+          let contextInfo = '';
+          let contextClass = 'context-utou';
+          
+          if (liffContext) {
+              switch (liffContext.type) {
+                  case 'utou':
+                      contextInfo = '個人聊天';
+                      contextClass = 'context-utou';
+                      break;
+                  case 'group':
+                      contextInfo = '群組聊天';
+                      contextClass = 'context-group';
+                      break;
+                  case 'room':
+                      contextInfo = '聊天室';
+                      contextClass = 'context-room';
+                      break;
+                  case 'square_chat':
+                      contextInfo = 'OpenChat';
+                      contextClass = 'context-square';
+                      break;
+                  default:
+                      contextInfo = '未知';
+              }
+          }
+
+          let html = `
+              <div class="info-item">
+                  <span class="info-label">環境類型:</span>
+                  <span class="info-value">
+                      <span class="context-badge ${contextClass}">${contextInfo}</span>
+                  </span>
+              </div>
+              <div class="info-item">
+                  <span class="info-label">LIFF 版本:</span>
+                  <span class="info-value">${liffEnvironment.version}</span>
+              </div>
+              <div class="info-item">
+                  <span class="info-label">作業系統:</span>
+                  <span class="info-value">${liffEnvironment.os}</span>
+              </div>
+              <div class="info-item">
+                  <span class="info-label">LINE 版本:</span>
+                  <span class="info-value">${liffEnvironment.lineVersion}</span>
+              </div>
+              <div class="info-item">
+                  <span class="info-label">語言設定:</span>
+                  <span class="info-value">${liffEnvironment.language}</span>
+              </div>
+              <div class="info-item">
+                  <span class="info-label">在 LINE 內:</span>
+                  <span class="info-value">${liffEnvironment.isInClient ? '是' : '否'}</span>
+              </div>
+          `;
+
+          // 如果是群組或聊天室，顯示 ID
+          if (liffContext && (liffContext.groupId || liffContext.roomId)) {
+              const chatId = liffContext.groupId || liffContext.roomId;
+              const chatType = liffContext.groupId ? '群組 ID' : '聊天室 ID';
+              
+              html += `
+                  <div class="info-item">
+                      <span class="info-label">${chatType}:</span>
+                      <span class="info-value" style="font-family: monospace; font-size: 11px;">${chatId}</span>
+                  </div>
+              `;
+          }
+
+          liffDetailsDiv.innerHTML = html;
+          liffInfoDiv.style.display = 'block';
+      }
+
+      // 顯示用戶資訊
+      function displayUserInfo() {
+          if (!userProfile) return;
+          
+          const userInfoDiv = document.getElementById('userInfo');
+          const userDetailsDiv = document.getElementById('userDetails');
+          const userAvatar = document.getElementById('userAvatar');
+          
+          if (!userInfoDiv || !userDetailsDiv) return;
+
+          // 顯示頭像
+          if (userProfile.pictureUrl && userAvatar) {
+              userAvatar.src = userProfile.pictureUrl;
+              userAvatar.style.display = 'block';
+              userAvatar.onerror = function() {
+                  this.style.display = 'none';
+              };
+          }
+
+          let html = `
+              <div class="info-item">
+                  <span class="info-label">LINE 名稱:</span>
+                  <span class="info-value">${userProfile.displayName}</span>
+              </div>
+              <div class="info-item">
+                  <span class="info-label">LINE ID:</span>
+                  <span class="info-value" style="font-family: monospace; font-size: 11px;">${userId}</span>
+              </div>
+          `;
+
+          // 顯示狀態訊息（如果有）
+          if (userProfile.statusMessage) {
+              html += `
+                  <div class="info-item">
+                      <span class="info-label">狀態訊息:</span>
+                      <span class="info-value">${userProfile.statusMessage}</span>
+                  </div>
+              `;
+          }
+
+          // 如果在群組中，嘗試取得群組名稱（需要額外 API）
+          if (liffContext && liffContext.type === 'group' && liffContext.groupId) {
+              html += `
+                  <div class="info-item">
+                      <span class="info-label">群組類型:</span>
+                      <span class="info-value">LINE 群組</span>
+                  </div>
+                  <div class="info-item">
+                      <span class="info-label">群組 ID:</span>
+                      <span class="info-value" style="font-family: monospace; font-size: 10px;">${liffContext.groupId}</span>
+                  </div>
+              `;
+          } else if (liffContext && liffContext.type === 'room' && liffContext.roomId) {
+              html += `
+                  <div class="info-item">
+                      <span class="info-label">聊天室類型:</span>
+                      <span class="info-value">LINE 聊天室</span>
+                  </div>
+                  <div class="info-item">
+                      <span class="info-label">聊天室 ID:</span>
+                      <span class="info-value" style="font-family: monospace; font-size: 10px;">${liffContext.roomId}</span>
+                  </div>
+              `;
+          }
+
+          // 如果已註冊，顯示註冊資訊
+          if (isRegistered && userRegistrationData) {
+              html += `
+                  <div class="info-item">
+                      <span class="info-label">真實姓名:</span>
+                      <span class="info-value">${userRegistrationData.realName}</span>
+                  </div>
+                  <div class="info-item">
+                      <span class="info-label">註冊時間:</span>
+                      <span class="info-value">${new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW')}</span>
+                  </div>
+              `;
+          }
+
+          userDetailsDiv.innerHTML = html;
+          userInfoDiv.style.display = 'block';
       }
 
       // 修正的 API 呼叫函數
@@ -463,7 +732,14 @@
               };
 
               if (method === 'POST' && data) {
-                  options.body = JSON.stringify(data);
+                  // 加入 LIFF 環境資訊到 API 請求
+                  const enhancedData = {
+                      ...data,
+                      liffContext: liffContext,
+                      liffEnvironment: liffEnvironment,
+                      timestamp: new Date().toISOString()
+                  };
+                  options.body = JSON.stringify(enhancedData);
               }
 
               debugLog('發送請求', { url, options });
@@ -507,6 +783,7 @@
                   userRegistrationData = result.userInfo;
                   showRegisteredStatus();
                   enableAllTabs();
+                  displayUserInfo(); // 重新顯示用戶資訊（包含註冊資訊）
               } else {
                   debugLog('用戶未註冊');
                   showRegisterForm();
@@ -529,12 +806,6 @@
           debugLog('顯示已註冊狀態');
           document.getElementById('registerForm').style.display = 'none';
           document.getElementById('registeredStatus').style.display = 'block';
-          
-          // 顯示用戶資訊
-          document.getElementById('lineDisplayName').textContent = userProfile.displayName;
-          document.getElementById('realName').textContent = userRegistrationData.realName;
-          document.getElementById('registerTime').textContent = new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW');
-          document.getElementById('userInfo').style.display = 'block';
       }
 
       function enableAllTabs() {
@@ -553,391 +824,392 @@
               <div id="ordersList">
                   <div class="loading">載入中...</div>
               </div>
-              <button class="btn" onclick="loadOrders()">重新載入</button>
-          `;
-          loadOrders();
-      }
-
-      function updatePaymentContent() {
-          document.getElementById('paymentContent').innerHTML = `
-              <h2>💳 繳費回報</h2>
-              
-              <div class="form-group">
-                  <label for="orderSelect">選擇訂單</label>
-                  <select id="orderSelect">
-                      <option value="">請選擇要繳費的訂單</option>
-                  </select>
-              </div>
-              
-              <div class="form-group">
-                  <label>上傳繳費證明</label>
-                  <div class="upload-area" onclick="document.getElementById('paymentProof').click()">
-                      <div class="upload-icon">📷</div>
-                      <p>點擊上傳繳費證明照片</p>
-                      <small>支援 JPG, PNG 格式</small>
-                  </div>
-                  <input type="file" id="paymentProof" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
-              </div>
-              
-              <div class="form-group">
-                  <label for="paymentMethod">繳費方式</label>
-                  <select id="paymentMethod">
-                      <option value="bank_transfer">銀行轉帳</option>
-                      <option value="cash">現金</option>
-                      <option value="line_pay">LINE Pay</option>
-                      <option value="credit_card">信用卡</option>
-                  </select>
-              </div>
-              
-              <div class="form-group">
-                  <label for="paymentNote">備註</label>
-                  <input type="text" id="paymentNote" placeholder="轉帳帳號後5碼或其他說明">
-              </div>
-              
-              <button class="btn" onclick="submitPayment()">提交繳費證明</button>
-          `;
-          loadOrdersForPayment();
-      }
-
-      // 標籤頁切換 - 修正版本
-      function switchTab(tabName, event) {
-          debugLog(`切換標籤頁: ${tabName}`);
-          
-          // 檢查是否已註冊（除了register頁面）
-          if (tabName !== 'register' && !isRegistered) {
-              showError('請先完成實名制登記');
-              return;
-          }
-          
-          // 移除所有active class
-          document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-          document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-          
-          // 添加active class
-          if (event && event.target) {
-              event.target.classList.add('active');
-          }
-          document.getElementById(tabName).classList.add('active');
-          
-          // 載入對應內容
-          if (tabName === 'orders' && isRegistered) {
-              loadOrders();
-          } else if (tabName === 'payment' && isRegistered) {
-              loadOrdersForPayment();
-          }
-      }
-
-      // 實名制登記 - 修正版本
-      document.addEventListener('submit', async function(e) {
-          if (e.target.id === 'nameForm') {
-              e.preventDefault();
-              
-              debugLog('提交註冊表單');
-              
-              const formData = new FormData(e.target);
-              const realName = formData.get('realName').trim();
-              
-              if (!realName) {
-                  showError('請輸入真實姓名');
-                  return;
-              }
-              
-              const registerData = {
-                  userId: userId,
-                  lineDisplayName: userProfile.displayName,
-                  realName: realName,
-                  registeredAt: new Date().toISOString()
-              };
-              
-              try {
-                  // 顯示載入狀態
-                  const submitBtn = document.getElementById('registerSubmitBtn');
-                  const originalText = submitBtn.textContent;
-                  submitBtn.textContent = '登記中...';
-                  submitBtn.disabled = true;
-                  
-                  const result = await callAPI('register', registerData);
-                  
-                  if (result.success) {
-                      debugLog('註冊成功');
-                      showSuccess('實名制登記完成！');
-                      isRegistered = true;
-                      userRegistrationData = registerData;
-                      showRegisteredStatus();
-                      enableAllTabs();
-                  } else {
-                      debugLog('註冊失敗', result);
-                      showError(result.message || '登記失敗，請稍後再試');
-                      submitBtn.textContent = originalText;
-                      submitBtn.disabled = false;
-                  }
-              } catch (error) {
-                  debugLog('註冊失敗', error);
-                  console.error('登記失敗:', error);
-                  showError('登記失敗，請稍後再試: ' + error.message);
-                  
-                  const submitBtn = document.getElementById('registerSubmitBtn');
-                  if (submitBtn) {
-                      submitBtn.textContent = '完成登記';
-                      submitBtn.disabled = false;
-                  }
-              }
-          }
-      });
-
-      // 載入訂單
-      async function loadOrders() {
-          if (!isRegistered) return;
-          
-          debugLog('載入用戶訂單');
-          document.getElementById('ordersList').innerHTML = '<div class="loading">載入中...</div>';
-          
-          try {
-              const result = await callAPI('orders', { userId: userId });
-              
-              if (result.success && result.orders.length > 0) {
-                  debugLog('訂單載入成功', result.orders);
-                  displayOrders(result.orders);
-              } else {
-                  debugLog('無訂單記錄');
-                  document.getElementById('ordersList').innerHTML = '<div class="error">暫無訂單記錄</div>';
-              }
-          } catch (error) {
-              debugLog('載入訂單失敗', error);
-              console.error('載入訂單失敗:', error);
-              document.getElementById('ordersList').innerHTML = '<div class="error">載入失敗，請稍後再試: ' + error.message + '</div>';
-          }
-      }
-
-      function displayOrders(orders) {
-          let html = '';
-          let totalAmount = 0;
-          
-          orders.forEach(order => {
-              const statusClass = order.paymentStatus === '已付款' ? 'status-paid' : 'status-pending';
-              const statusText = order.paymentStatus === '已付款' ? '已付款' : '待付款';
-              
-              html += `
-                  <div class="order-item">
-                      <h3>訂單 #${order.orderId}</h3>
-                      <div class="order-detail">
-                          <span>產品名稱:</span>
-                          <span>${order.productName}</span>
-                      </div>
-                      <div class="order-detail">
-                          <span>單價:</span>
-                          <span>NT$ ${order.unitPrice.toLocaleString()}</span>
-                        </div>
-                        <div class="order-detail">
-                            <span>數量:</span>
-                            <span>${order.quantity}</span>
-                        </div>
-                        <div class="order-detail">
-                            <span>狀態:</span>
-                            <span class="status-badge ${statusClass}">${statusText}</span>
-                        </div>
-                        <div class="total-amount">
-                            合計: NT$ ${order.totalAmount.toLocaleString()}
-                        </div>
-                    </div>
-                `;
-                totalAmount += order.totalAmount;
-            });
-            
-            html += `
-                <div class="order-item" style="background: #e8f5e8; border-left-color: #00B900;">
-                    <div class="total-amount" style="font-size: 20px; color: #00B900;">
-                        總金額: NT$ ${totalAmount.toLocaleString()}
-                    </div>
-                </div>
+                <button class="btn" onclick="loadOrders()">重新載入</button>
             `;
-            
-            document.getElementById('ordersList').innerHTML = html;
+            loadOrders();
         }
 
-        // 載入訂單供繳費選擇
-        async function loadOrdersForPayment() {
+        function updatePaymentContent() {
+            document.getElementById('paymentContent').innerHTML = `
+                <h2>💳 繳費回報</h2>
+                
+                <div class="form-group">
+                    <label for="orderSelect">選擇訂單</label>
+                    <select id="orderSelect">
+                        <option value="">請選擇要繳費的訂單</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>上傳繳費證明</label>
+                    <div class="upload-area" onclick="document.getElementById('paymentProof').click()">
+                        <div class="upload-icon">📷</div>
+                        <p>點擊上傳繳費證明照片</p>
+                        <small>支援 JPG, PNG 格式</small>
+                    </div>
+                    <input type="file" id="paymentProof" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentMethod">繳費方式</label>
+                    <select id="paymentMethod">
+                        <option value="bank_transfer">銀行轉帳</option>
+                        <option value="cash">現金</option>
+                        <option value="line_pay">LINE Pay</option>
+                        <option value="credit_card">信用卡</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentNote">備註</label>
+                    <input type="text" id="paymentNote" placeholder="轉帳帳號後5碼或其他說明">
+                </div>
+                
+                <button class="btn" onclick="submitPayment()">提交繳費證明</button>
+            `;
+            loadOrdersForPayment();
+        }
+
+        // 標籤頁切換 - 修正版本
+        function switchTab(tabName, event) {
+            debugLog(`切換標籤頁: ${tabName}`);
+            
+            // 檢查是否已註冊（除了register頁面）
+            if (tabName !== 'register' && !isRegistered) {
+                showError('請先完成實名制登記');
+                return;
+            }
+            
+            // 移除所有active class
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // 添加active class
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            document.getElementById(tabName).classList.add('active');
+            
+            // 載入對應內容
+            if (tabName === 'orders' && isRegistered) {
+                loadOrders();
+            } else if (tabName === 'payment' && isRegistered) {
+                loadOrdersForPayment();
+            }
+        }
+
+        // 實名制登記 - 修正版本
+        document.addEventListener('submit', async function(e) {
+            if (e.target.id === 'nameForm') {
+                e.preventDefault();
+                
+                debugLog('提交註冊表單');
+                
+                const formData = new FormData(e.target);
+                const realName = formData.get('realName').trim();
+                
+                if (!realName) {
+                    showError('請輸入真實姓名');
+                    return;
+                }
+                
+                const registerData = {
+                    userId: userId,
+                    lineDisplayName: userProfile.displayName,
+                    realName: realName,
+                    registeredAt: new Date().toISOString()
+                };
+                
+                try {
+                    // 顯示載入狀態
+                    const submitBtn = document.getElementById('registerSubmitBtn');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.textContent = '登記中...';
+                    submitBtn.disabled = true;
+                    
+                    const result = await callAPI('register', registerData);
+                    
+                    if (result.success) {
+                        debugLog('註冊成功');
+                        showSuccess('實名制登記完成！');
+                        isRegistered = true;
+                        userRegistrationData = registerData;
+                        showRegisteredStatus();
+                        enableAllTabs();
+                        displayUserInfo(); // 重新顯示用戶資訊
+                    } else {
+                        debugLog('註冊失敗', result);
+                        showError(result.message || '登記失敗，請稍後再試');
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    }
+                } catch (error) {
+                    debugLog('註冊失敗', error);
+                    console.error('登記失敗:', error);
+                    showError('登記失敗，請稍後再試: ' + error.message);
+                    
+                    const submitBtn = document.getElementById('registerSubmitBtn');
+                    if (submitBtn) {
+                        submitBtn.textContent = '完成登記';
+                        submitBtn.disabled = false;
+                    }
+                }
+            }
+        });
+
+        // 載入訂單
+        async function loadOrders() {
             if (!isRegistered) return;
             
-            debugLog('載入繳費訂單選項');
+            debugLog('載入用戶訂單');
+            document.getElementById('ordersList').innerHTML = '<div class="loading">載入中...</div>';
             
             try {
                 const result = await callAPI('orders', { userId: userId });
                 
                 if (result.success && result.orders.length > 0) {
-                    const select = document.getElementById('orderSelect');
-                    if (select) {
-                        select.innerHTML = '<option value="">請選擇要繳費的訂單</option>';
-                        
-                        result.orders.forEach(order => {
-                            if (order.paymentStatus !== '已付款') {
-                                select.innerHTML += `
-                                    <option value="${order.orderId}">
-                                        ${order.orderId} - ${order.productName} (NT$ ${order.totalAmount.toLocaleString()})
-                                    </option>
-                                `;
-                            }
-                        });
-                    }
-                }
-            } catch (error) {
-                debugLog('載入繳費訂單失敗', error);
-                console.error('載入繳費訂單失敗:', error);
-            }
-        }
-
-        // 處理檔案上傳
-        function handleFileUpload(input) {
-            const file = input.files[0];
-            if (file) {
-                debugLog('選擇檔案', { name: file.name, size: file.size, type: file.type });
-                
-                const uploadArea = document.querySelector('.upload-area');
-                uploadArea.innerHTML = `
-                    <div class="upload-icon">✅</div>
-                    <p>已選擇: ${file.name}</p>
-                    <small>檔案大小: ${(file.size / 1024 / 1024).toFixed(2)} MB</small>
-                `;
-                uploadArea.style.background = '#d4edda';
-            }
-        }
-
-        // 提交繳費證明
-        async function submitPayment() {
-            debugLog('提交繳費證明');
-            
-            const orderId = document.getElementById('orderSelect').value;
-            const paymentMethod = document.getElementById('paymentMethod').value;
-            const paymentNote = document.getElementById('paymentNote').value;
-            const paymentProof = document.getElementById('paymentProof').files[0];
-            
-            if (!orderId) {
-                showError('請選擇要繳費的訂單');
-                return;
-            }
-            
-            if (!paymentProof) {
-                showError('請上傳繳費證明');
-                return;
-            }
-            
-            const paymentData = {
-                userId: userId,
-                orderId: orderId,
-                paymentMethod: paymentMethod,
-                paymentNote: paymentNote,
-                realName: userRegistrationData.realName
-            };
-            
-            try {
-                const result = await callAPI('submit-payment', paymentData);
-                
-                if (result.success) {
-                    debugLog('繳費證明提交成功');
-                    showSuccess('繳費證明提交成功！我們會盡快處理您的申請。');
-                    
-                    // 清空表單
-                    document.getElementById('orderSelect').value = '';
-                    document.getElementById('paymentNote').value = '';
-                    document.getElementById('paymentProof').value = '';
-                    
-                    // 重置上傳區域
-                    const uploadArea = document.querySelector('.upload-area');
-                    uploadArea.innerHTML = `
-                        <div class="upload-icon">📷</div>
-                        <p>點擊上傳繳費證明照片</p>
-                        <small>支援 JPG, PNG 格式</small>
-                    `;
-                    uploadArea.style.background = '';
-                    
-                    // 重新載入訂單
-                    loadOrdersForPayment();
+                    debugLog('訂單載入成功', result.orders);
+                    displayOrders(result.orders);
                 } else {
-                    debugLog('繳費證明提交失敗', result);
-                    showError(result.message || '提交失敗，請稍後再試');
+                    debugLog('無訂單記錄');
+                    document.getElementById('ordersList').innerHTML = '<div class="error">暫無訂單記錄</div>';
                 }
             } catch (error) {
-                debugLog('繳費證明提交失敗', error);
-                console.error('提交繳費證明失敗:', error);
-                showError('提交失敗，請稍後再試: ' + error.message);
+                debugLog('載入訂單失敗', error);
+                console.error('載入訂單失敗:', error);
+                document.getElementById('ordersList').innerHTML = '<div class="error">載入失敗，請稍後再試: ' + error.message + '</div>';
             }
         }
 
-        // 顯示錯誤訊息
-        function showError(message) {
-            debugLog('顯示錯誤訊息', message);
+        function displayOrders(orders) {
+            let html = '';
+            let totalAmount = 0;
             
-            // 移除現有的訊息
-            const existingMessages = document.querySelectorAll('.error, .success');
-            existingMessages.forEach(msg => msg.remove());
-            
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error';
-            errorDiv.textContent = message;
-            
-            const content = document.querySelector('.content');
-            content.insertBefore(errorDiv, content.firstChild);
-            
-            // 3秒後自動移除
-            setTimeout(() => {
-                if (errorDiv.parentNode) {
-                    errorDiv.remove();
-                }
-            }, 5000);
-        }
+            orders.forEach(order => {
+                const statusClass = order.paymentStatus === '已付款' ? 'status-paid' : 'status-pending';
+                const statusText = order.paymentStatus === '已付款' ? '已付款' : '待付款';
+                
+                html += `
+                    <div class="order-item">
+                        <h3>訂單 #${order.orderId}</h3>
+                        <div class="order-detail">
+                            <span>產品名稱:</span>
+                            <span>${order.productName}</span>
+                        </div>
+                        <div class="order-detail">
+                            <span>單價:</span>
+                            <span>NT$ ${order.unitPrice.toLocaleString()}</span>
+                          </div>
+                          <div class="order-detail">
+                              <span>數量:</span>
+                              <span>${order.quantity}</span>
+                          </div>
+                          <div class="order-detail">
+                              <span>狀態:</span>
+                              <span class="status-badge ${statusClass}">${statusText}</span>
+                          </div>
+                          <div class="total-amount">
+                              合計: NT$ ${order.totalAmount.toLocaleString()}
+                          </div>
+                      </div>
+                  `;
+                  totalAmount += order.totalAmount;
+              });
+              
+              html += `
+                  <div class="order-item" style="background: #e8f5e8; border-left-color: #00B900;">
+                      <div class="total-amount" style="font-size: 20px; color: #00B900;">
+                          總金額: NT$ ${totalAmount.toLocaleString()}
+                      </div>
+                  </div>
+              `;
+              
+              document.getElementById('ordersList').innerHTML = html;
+          }
 
-        // 顯示成功訊息
-        function showSuccess(message) {
-            debugLog('顯示成功訊息', message);
-            
-            // 移除現有的訊息
-            const existingMessages = document.querySelectorAll('.error, .success');
-            existingMessages.forEach(msg => msg.remove());
-            
-            const successDiv = document.createElement('div');
-            successDiv.className = 'success';
-            successDiv.textContent = message;
-            
-            const content = document.querySelector('.content');
-            content.insertBefore(successDiv, content.firstChild);
-            
-            // 3秒後自動移除
-            setTimeout(() => {
-                if (successDiv.parentNode) {
-                    successDiv.remove();
-                }
-            }, 3000);
-        }
+          // 載入訂單供繳費選擇
+          async function loadOrdersForPayment() {
+              if (!isRegistered) return;
+              
+              debugLog('載入繳費訂單選項');
+              
+              try {
+                  const result = await callAPI('orders', { userId: userId });
+                  
+                  if (result.success && result.orders.length > 0) {
+                      const select = document.getElementById('orderSelect');
+                      if (select) {
+                          select.innerHTML = '<option value="">請選擇要繳費的訂單</option>';
+                          
+                          result.orders.forEach(order => {
+                              if (order.paymentStatus !== '已付款') {
+                                  select.innerHTML += `
+                                      <option value="${order.orderId}">
+                                          ${order.orderId} - ${order.productName} (NT$ ${order.totalAmount.toLocaleString()})
+                                      </option>
+                                  `;
+                              }
+                          });
+                      }
+                  }
+              } catch (error) {
+                  debugLog('載入繳費訂單失敗', error);
+                  console.error('載入繳費訂單失敗:', error);
+              }
+          }
 
-        // 頁面載入完成後的初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            debugLog('DOM 載入完成');
-            
-            // 如果 LIFF 尚未初始化，則重新初始化
-            if (!userId) {
-                debugLog('重新初始化 LIFF');
-                initializeLiff();
-            }
-        });
+          // 處理檔案上傳
+          function handleFileUpload(input) {
+              const file = input.files[0];
+              if (file) {
+                  debugLog('選擇檔案', { name: file.name, size: file.size, type: file.type });
+                  
+                  const uploadArea = document.querySelector('.upload-area');
+                  uploadArea.innerHTML = `
+                      <div class="upload-icon">✅</div>
+                      <p>已選擇: ${file.name}</p>
+                      <small>檔案大小: ${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                  `;
+                  uploadArea.style.background = '#d4edda';
+              }
+          }
 
-        // 錯誤處理
-        window.addEventListener('error', function(e) {
-            debugLog('全域錯誤', {
-                message: e.message,
-                filename: e.filename,
-                lineno: e.lineno,
-                colno: e.colno,
-                error: e.error
-            });
-            console.error('全域錯誤:', e);
-        });
+          // 提交繳費證明
+          async function submitPayment() {
+              debugLog('提交繳費證明');
+              
+              const orderId = document.getElementById('orderSelect').value;
+              const paymentMethod = document.getElementById('paymentMethod').value;
+              const paymentNote = document.getElementById('paymentNote').value;
+              const paymentProof = document.getElementById('paymentProof').files[0];
+              
+              if (!orderId) {
+                  showError('請選擇要繳費的訂單');
+                  return;
+              }
+              
+              if (!paymentProof) {
+                  showError('請上傳繳費證明');
+                  return;
+              }
+              
+              const paymentData = {
+                  userId: userId,
+                  orderId: orderId,
+                  paymentMethod: paymentMethod,
+                  paymentNote: paymentNote,
+                  realName: userRegistrationData.realName
+              };
+              
+              try {
+                  const result = await callAPI('submit-payment', paymentData);
+                  
+                  if (result.success) {
+                      debugLog('繳費證明提交成功');
+                      showSuccess('繳費證明提交成功！我們會盡快處理您的申請。');
+                      
+                      // 清空表單
+                      document.getElementById('orderSelect').value = '';
+                      document.getElementById('paymentNote').value = '';
+                      document.getElementById('paymentProof').value = '';
+                      
+                      // 重置上傳區域
+                      const uploadArea = document.querySelector('.upload-area');
+                      uploadArea.innerHTML = `
+                          <div class="upload-icon">📷</div>
+                          <p>點擊上傳繳費證明照片</p>
+                          <small>支援 JPG, PNG 格式</small>
+                      `;
+                      uploadArea.style.background = '';
+                      
+                      // 重新載入訂單
+                      loadOrdersForPayment();
+                  } else {
+                      debugLog('繳費證明提交失敗', result);
+                      showError(result.message || '提交失敗，請稍後再試');
+                  }
+              } catch (error) {
+                  debugLog('繳費證明提交失敗', error);
+                  console.error('提交繳費證明失敗:', error);
+                  showError('提交失敗，請稍後再試: ' + error.message);
+              }
+          }
 
-        // 未處理的 Promise 拒絕
-        window.addEventListener('unhandledrejection', function(e) {
-            debugLog('未處理的 Promise 拒絕', e.reason);
-            console.error('未處理的 Promise 拒絕:', e.reason);
-        });
+          // 顯示錯誤訊息
+          function showError(message) {
+              debugLog('顯示錯誤訊息', message);
+              
+              // 移除現有的訊息
+              const existingMessages = document.querySelectorAll('.error, .success');
+              existingMessages.forEach(msg => msg.remove());
+              
+              const errorDiv = document.createElement('div');
+              errorDiv.className = 'error';
+              errorDiv.textContent = message;
+              
+              const content = document.querySelector('.content');
+              content.insertBefore(errorDiv, content.firstChild);
+              
+              // 5秒後自動移除
+              setTimeout(() => {
+                  if (errorDiv.parentNode) {
+                      errorDiv.remove();
+                  }
+              }, 5000);
+          }
 
-    </script>
-  </body>
-  </html>
+          // 顯示成功訊息
+          function showSuccess(message) {
+              debugLog('顯示成功訊息', message);
+              
+              // 移除現有的訊息
+              const existingMessages = document.querySelectorAll('.error, .success');
+              existingMessages.forEach(msg => msg.remove());
+              
+              const successDiv = document.createElement('div');
+              successDiv.className = 'success';
+              successDiv.textContent = message;
+              
+              const content = document.querySelector('.content');
+              content.insertBefore(successDiv, content.firstChild);
+              
+              // 3秒後自動移除
+              setTimeout(() => {
+                  if (successDiv.parentNode) {
+                      successDiv.remove();
+                  }
+              }, 3000);
+          }
+
+          // 頁面載入完成後的初始化
+          document.addEventListener('DOMContentLoaded', function() {
+              debugLog('DOM 載入完成');
+              
+              // 如果 LIFF 尚未初始化，則重新初始化
+              if (!userId) {
+                  debugLog('重新初始化 LIFF');
+                  initializeLiff();
+              }
+          });
+
+          // 錯誤處理
+          window.addEventListener('error', function(e) {
+              debugLog('全域錯誤', {
+                  message: e.message,
+                  filename: e.filename,
+                  lineno: e.lineno,
+                  colno: e.colno,
+                  error: e.error
+              });
+              console.error('全域錯誤:', e);
+          });
+
+          // 未處理的 Promise 拒絕
+          window.addEventListener('unhandledrejection', function(e) {
+              debugLog('未處理的 Promise 拒絕', e.reason);
+              console.error('未處理的 Promise 拒絕:', e.reason);
+          });
+
+      </script>
+    </body>
+    </html>
