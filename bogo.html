@@ -358,20 +358,6 @@
       .context-room { background: #fff3e0; color: #f57c00; }
       .context-square { background: #fce4ec; color: #c2185b; }
 
-      .demo-mode {
-          background: #fff3cd;
-          border: 1px solid #ffeaa7;
-          padding: 15px;
-          border-radius: 10px;
-          margin-bottom: 20px;
-          text-align: center;
-      }
-
-      .demo-mode h3 {
-          color: #856404;
-          margin-bottom: 10px;
-      }
-
       .order-summary {
           background: #e8f5e8;
           padding: 20px;
@@ -426,6 +412,27 @@
           text-align: right;
           color: #666;
       }
+
+      .api-status {
+          background: #fff3cd;
+          border: 1px solid #ffeaa7;
+          padding: 15px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          text-align: center;
+      }
+
+      .api-status.connected {
+          background: #d4edda;
+          border-color: #c3e6cb;
+          color: #155724;
+      }
+
+      .api-status.disconnected {
+          background: #f8d7da;
+          border-color: #f5c6cb;
+          color: #721c24;
+      }
   </style>
 </head>
 <body>
@@ -436,16 +443,16 @@
       </div>
       
       <div class="content">
+          <!-- API 連線狀態 -->
+          <div id="apiStatus" class="api-status" style="display: none;">
+              <h3 id="apiStatusTitle">🔗 API 連線狀態</h3>
+              <p id="apiStatusMessage">檢查中...</p>
+          </div>
+
           <!-- 除錯資訊 -->
           <div id="debugInfo" class="debug-info" style="display: none;">
               <strong>除錯資訊:</strong><br>
               <span id="debugText"></span>
-          </div>
-
-          <!-- 示範模式提示 -->
-          <div id="demoMode" class="demo-mode" style="display: none;">
-              <h3>🚧 示範模式</h3>
-              <p>目前無法連接後端 API，顯示示範資料</p>
           </div>
 
           <!-- LIFF 環境資訊 -->
@@ -530,9 +537,9 @@
       // 設定區域 - 請修改為您的實際值
       const CONFIG = {
           LIFF_ID: '1657285806-2bmkYWkN', // 請替換為實際的 LIFF ID
-          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbztaoz3deH2K1_cmfHneSnuGn176k5u8ViCxf8mRP74zT5oJNOWiJpAPYf9g6dwn-Fw/exec', // 請替換為 GAS 部署網址
+          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbzroLfFKZWookddTDbspwk7d9AXE8IOpv5Z7sd7mHjfvQJoYPkhkechsFJ_GJAgAxn2/exec', // 請替換為 GAS 部署網址
           DEBUG_MODE: true, // 開啟除錯模式
-          DEMO_MODE: false // 示範模式（當 API 無法使用時）
+          DEMO_MODE: false // 關閉示範模式
       };
 
       let userId = null;
@@ -541,8 +548,8 @@
       let liffEnvironment = null;
       let isRegistered = false;
       let userRegistrationData = null;
-      let demoMode = false;
-      let currentOrderSummary = null; // 儲存當前訂單摘要
+      let currentOrderSummary = null;
+      let apiConnected = false;
 
       // 除錯函數
       function debugLog(message, data = null) {
@@ -559,6 +566,37 @@
                   debugText.innerHTML += '<br>';
                   debugText.scrollTop = debugText.scrollHeight;
               }
+          }
+      }
+
+      // 顯示 API 連線狀態
+      function showApiStatus(connected, message = '') {
+          const statusDiv = document.getElementById('apiStatus');
+          const titleDiv = document.getElementById('apiStatusTitle');
+          const messageDiv = document.getElementById('apiStatusMessage');
+          
+          if (!statusDiv) return;
+          
+          apiConnected = connected;
+          statusDiv.style.display = 'block';
+          
+          if (connected) {
+              statusDiv.className = 'api-status connected';
+              titleDiv.textContent = '✅ API 連線正常';
+              messageDiv.textContent = message || '已成功連接到後端資料庫';
+          } else {
+              statusDiv.className = 'api-status disconnected';
+              titleDiv.textContent = '❌ API 連線失敗';
+              messageDiv.textContent = message || '無法連接到後端資料庫，請檢查網路連線';
+          }
+          
+          // 5秒後隱藏狀態訊息（如果連線正常）
+          if (connected) {
+              setTimeout(() => {
+                  if (statusDiv) {
+                      statusDiv.style.display = 'none';
+                  }
+              }, 5000);
           }
       }
 
@@ -591,6 +629,9 @@
                   // 顯示用戶資訊
                   displayUserInfo();
                   
+                  // 測試 API 連線
+                  await testApiConnection();
+                  
                   // 檢查用戶是否已註冊
                   await checkUserRegistration();
               } else {
@@ -601,6 +642,27 @@
               debugLog('LIFF初始化失敗', error);
               console.error('LIFF初始化失敗:', error);
               showError('系統初始化失敗，請重新開啟: ' + error.message);
+          }
+      }
+
+      // 測試 API 連線
+      async function testApiConnection() {
+          try {
+              debugLog('測試 API 連線');
+              showApiStatus(false, '測試連線中...');
+              
+              const testResult = await callAPI('test', { test: true });
+              
+              if (testResult && testResult.success !== false) {
+                  debugLog('API 連線測試成功');
+                  showApiStatus(true, 'API 連線測試成功');
+              } else {
+                  debugLog('API 連線測試失敗', testResult);
+                  showApiStatus(false, 'API 回應異常');
+              }
+          } catch (error) {
+              debugLog('API 連線測試失敗', error);
+              showApiStatus(false, 'API 連線測試失敗: ' + error.message);
           }
       }
 
@@ -776,145 +838,99 @@
               `;
           }
 
-          // 如果已註冊，顯示註冊資訊
-          if (isRegistered && userRegistrationData) {
-              html += `
-                  <div class="info-item">
-                      <span class="info-label">真實姓名:</span>
-                      <span class="info-value">${userRegistrationData.realName}</span>
-                  </div>
-                  <div class="info-item">
-                      <span class="info-label">註冊時間:</span>
-                      <span class="info-value">${new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW')}</span>
-                  </div>
-              `;
-          }
+          // 如果已註冊，顯示註冊資
+            // 如果已註冊，顯示註冊資訊
+            if (isRegistered && userRegistrationData) {
+                html += `
+                    <div class="info-item">
+                        <span class="info-label">真實姓名:</span>
+                        <span class="info-value">${userRegistrationData.realName}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">註冊時間:</span>
+                        <span class="info-value">${new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW')}</span>
+                    </div>
+                `;
+            }
 
-          userDetailsDiv.innerHTML = html;
-          userInfoDiv.style.display = 'block';
-      }
+            userDetailsDiv.innerHTML = html;
+            userInfoDiv.style.display = 'block';
+        }
 
-      // 修正的 API 呼叫函數 - 使用 GET 請求避免 CORS 預檢
-      async function callAPI(path, data, method = 'GET') {
-          try {
-              debugLog(`呼叫 API: ${path}`, data);
-              
-              let url = CONFIG.API_BASE_URL;
-              
-              if (method === 'GET') {
-                  // 將參數編碼到 URL 中
-                  const params = new URLSearchParams();
-                  params.append('action', path);
-                  
-                  if (data) {
-                      // 加入 LIFF 環境資訊到 API 請求
-                      const enhancedData = {
-                          ...data,
-                          liffContext: liffContext,
-                          liffEnvironment: liffEnvironment,
-                          timestamp: new Date().toISOString()
-                      };
-                      params.append('data', JSON.stringify(enhancedData));
-                  }
-                  
-                  url += '?' + params.toString();
-              }
-
-              debugLog('發送請求', { url, method });
-              
-              const response = await fetch(url, {
-                  method: method,
-                  mode: 'no-cors' // 使用 no-cors 模式
-              });
-              
-              debugLog('收到回應', {
-                  status: response.status,
-                  type: response.type
-              });
-              
-              // 由於使用 no-cors 模式，無法讀取回應內容
-              // 這裡我們假設請求成功並返回示範資料
-              return await handleDemoResponse(path, data);
-              
+        // 修正的 API 呼叫函數 - 使用 JSONP 方式
+        async function callAPI(path, data, method = 'GET') {
+            try {
+                debugLog(`呼叫 API: ${path}`, data);
+                
+                // 加入 LIFF 環境資訊到 API 請求
+                const enhancedData = {
+                    ...data,
+                    liffContext: liffContext,
+                    liffEnvironment: liffEnvironment,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // 使用 JSONP 方式呼叫 API
+                const result = await callApiWithJsonp(path, enhancedData);
+                debugLog('API 回應', result);
+                
+                return result;
+                
             } catch (error) {
-                debugLog('API 呼叫失敗，切換到示範模式', error);
+                debugLog('API 呼叫失敗', error);
                 console.error(`API 呼叫失敗 (${path}):`, error);
-                
-                // 啟用示範模式
-                enableDemoMode();
-                return await handleDemoResponse(path, data);
+                throw error;
             }
         }
 
-        // 啟用示範模式
-        function enableDemoMode() {
-            if (!demoMode) {
-                demoMode = true;
-                document.getElementById('demoMode').style.display = 'block';
-                debugLog('啟用示範模式');
-            }
-        }
-
-        // 處理示範回應
-        async function handleDemoResponse(path, data) {
-            debugLog(`示範模式回應: ${path}`, data);
-            
-            switch (path) {
-                case 'check-registration':
-                    // 模擬未註冊狀態
-                    return {
-                        success: true,
-                        registered: false,
-                        message: '用戶未註冊'
-                    };
+        // JSONP 方式呼叫 API
+        function callApiWithJsonp(action, data) {
+            return new Promise((resolve, reject) => {
+                // 創建唯一的回調函數名稱
+                const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
                 
-                case 'register':
-                    // 模擬註冊成功
-                    return {
-                        success: true,
-                        message: '註冊成功',
-                        userInfo: data
-                    };
+                // 設置全域回調函數
+                window[callbackName] = function(response) {
+                    // 清理
+                    delete window[callbackName];
+                    document.head.removeChild(script);
+                    
+                    resolve(response);
+                };
                 
-                case 'orders':
-                    // 模擬訂購清單資料 - 根據LINE名稱查詢
-                    return {
-                        success: true,
-                        orderSummary: {
-                            orderId: 'ORD-' + new Date().getTime(),
-                            lineName: userProfile.displayName,
-                            realName: userRegistrationData?.realName || '示範用戶',
-                            totalAmount: 3200,
-                            products: [
-                                {
-                                    productName: '示範商品 A',
-                                    quantity: 3,
-                                    unitPrice: 800,
-                                    totalPrice: 2400
-                                },
-                                {
-                                    productName: '示範商品 B',
-                                    quantity: 1,
-                                    unitPrice: 800,
-                                    totalPrice: 800
-                                }
-                            ]
-                        }
-                    };
+                // 建立 script 標籤
+                const script = document.createElement('script');
                 
-                case 'submit-payment':
-                    // 模擬繳費提交成功
-                    return {
-                        success: true,
-                        message: '繳費證明提交成功'
-                    };
+                // 建立 URL 參數
+                const params = new URLSearchParams();
+                params.append('action', action);
+                params.append('callback', callbackName);
                 
-                default:
-                    return {
-                        success: false,
-                        message: '未知的 API 路徑'
-                    };
-            }
+                if (data) {
+                    params.append('data', JSON.stringify(data));
+                }
+                
+                script.src = CONFIG.API_BASE_URL + '?' + params.toString();
+                
+                // 錯誤處理
+                script.onerror = function() {
+                    delete window[callbackName];
+                    document.head.removeChild(script);
+                    reject(new Error('JSONP 請求失敗'));
+                };
+                
+                // 超時處理
+                setTimeout(() => {
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                        document.head.removeChild(script);
+                        reject(new Error('API 請求超時'));
+                    }
+                }, 10000); // 10秒超時
+                
+                // 執行請求
+                document.head.appendChild(script);
+            });
         }
 
         async function checkUserRegistration() {
@@ -1021,7 +1037,7 @@
             loadOrderSummaryForPayment();
         }
 
-        // 標籤頁切換 - 修正版本
+        // 標籤頁切換
         function switchTab(tabName, event) {
             debugLog(`切換標籤頁: ${tabName}`);
             
@@ -1049,7 +1065,7 @@
             }
         }
 
-        // 實名制登記 - 修正版本
+        // 實名制登記
         document.addEventListener('submit', async function(e) {
             if (e.target.id === 'nameForm') {
                 e.preventDefault();
@@ -1108,7 +1124,7 @@
             }
         });
 
-        // 載入訂單 - 根據LINE名稱查詢並合併相同產品
+        // 載入訂單
         async function loadOrders() {
             if (!isRegistered) return;
             
