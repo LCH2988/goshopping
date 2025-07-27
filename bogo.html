@@ -794,7 +794,7 @@
     // 設定區域 - 請修改為您的實際值
     const CONFIG = {
         LIFF_ID: '1657285806-2bmkYWkN', // 請替換為實際的 LIFF ID
-        API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwdvXTEMWDQLbGUbCLgIpDcfb66W0bQ4XZSrTWcCG87is4jbLANVJnEiKqh8waXiNBn/exec', // 請替換為 GAS 部署網址
+        API_BASE_URL: 'https://script.google.com/macros/s/AKfycbzvoH0z_W3qxO2h8zBBtrSFaCxeKv_J-6SH5KRyd7nBouvLLwErtskjByU4AnOtXfTh/exec', // 請替換為 GAS 部署網址
         DEBUG_MODE: true, // 開發時設為 true，正式環境設為 false
         MAX_RETRY_COUNT: 3,
         RETRY_DELAY: 1000
@@ -1390,11 +1390,8 @@
                     <select id="paymentMethod" name="paymentMethod" required>
                         <option value="">請選擇繳費方式</option>
                         <option value="銀行轉帳">銀行轉帳</option>
-                        // <option value="ATM轉帳">ATM轉帳</option>
-                        // <option value="超商繳費">超商繳費</option>
-                        // <option value="信用卡">信用卡</option>
                         <option value="現金">現金</option>
-                        // <option value="其他">其他</option>
+                        <option value="linePay">linePay</option>
                     </select>
                 </div>
                 
