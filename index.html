@@ -1021,85 +1021,85 @@
           document.getElementById('memberOrdersSection').style.display = 'block';
       }
 
-      // 載入會員訂單
-      function loadMemberOrders(lineName) {
-          callAPI('admin-get-member-orders', { lineName: lineName })
-              .then(result => {
-                  const { memberInfo, orders, payments, summary } = result;
+      // // 載入會員訂單
+      // function loadMemberOrders(lineName) {
+      //     callAPI('admin-get-member-orders', { lineName: lineName })
+      //         .then(result => {
+      //             const { memberInfo, orders, payments, summary } = result;
                   
-                  // 顯示會員資訊
-                  const memberInfoDiv = document.getElementById('memberInfo');
-                  memberInfoDiv.innerHTML = `
-                      <div class="summary-row">
-                          <span>會員姓名:</span>
-                          <span>${memberInfo ? memberInfo.realName : '未註冊'}</span>
-                      </div>
-                      <div class="summary-row">
-                          <span>LINE名稱:</span>
-                          <span>${lineName}</span>
-                      </div>
-                      ${memberInfo ? `
-                      <div class="summary-row">
-                          <span>註冊時間:</span>
-                          <span>${new Date(memberInfo.registeredAt).toLocaleString('zh-TW')}</span>
-                      </div>
-                      ` : ''}
-                  `;
+      //             // 顯示會員資訊
+      //             const memberInfoDiv = document.getElementById('memberInfo');
+      //             memberInfoDiv.innerHTML = `
+      //                 <div class="summary-row">
+      //                     <span>會員姓名:</span>
+      //                     <span>${memberInfo ? memberInfo.realName : '未註冊'}</span>
+      //                 </div>
+      //                 <div class="summary-row">
+      //                     <span>LINE名稱:</span>
+      //                     <span>${lineName}</span>
+      //                 </div>
+      //                 ${memberInfo ? `
+      //                 <div class="summary-row">
+      //                     <span>註冊時間:</span>
+      //                     <span>${new Date(memberInfo.registeredAt).toLocaleString('zh-TW')}</span>
+      //                 </div>
+      //                 ` : ''}
+      //             `;
                   
-                  // 顯示訂單列表
-                  const tbody = document.getElementById('memberOrdersTableBody');
-                  if (orders.length === 0) {
-                      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">暫無訂單記錄</td></tr>';
-                  } else {
-                      tbody.innerHTML = orders.map(order => `
-                          <tr>
-                              <td>${order.productCode}</td>
-                              <td>${order.productName}</td>
-                              <td>${order.quantity}</td>
-                              <td>NT$ ${parseFloat(order.unitPrice).toLocaleString()}</td>
-                              <td>NT$ ${parseFloat(order.totalPrice).toLocaleString()}</td>
-                              <td>
-                                  <button class="btn btn-warning" onclick="editOrder(${order.rowIndex})">編輯</button>
-                                  <button class="btn btn-danger" onclick="deleteOrder(${order.rowIndex})">刪除</button>
-                              </td>
-                          </tr>
-                      `).join('');
-                  }
+      //             // 顯示訂單列表
+      //             const tbody = document.getElementById('memberOrdersTableBody');
+      //             if (orders.length === 0) {
+      //                 tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">暫無訂單記錄</td></tr>';
+      //             } else {
+      //                 tbody.innerHTML = orders.map(order => `
+      //                     <tr>
+      //                         <td>${order.productCode}</td>
+      //                         <td>${order.productName}</td>
+      //                         <td>${order.quantity}</td>
+      //                         <td>NT$ ${parseFloat(order.unitPrice).toLocaleString()}</td>
+      //                         <td>NT$ ${parseFloat(order.totalPrice).toLocaleString()}</td>
+      //                         <td>
+      //                             <button class="btn btn-warning" onclick="editOrder(${order.rowIndex})">編輯</button>
+      //                             <button class="btn btn-danger" onclick="deleteOrder(${order.rowIndex})">刪除</button>
+      //                         </td>
+      //                     </tr>
+      //                 `).join('');
+      //             }
                   
-                  // 顯示訂單摘要
-                  const summaryDiv = document.getElementById('orderSummary');
-                  summaryDiv.innerHTML = `
-                      <div class="summary-row">
-                          <span>訂單項目:</span>
-                          <span>${summary.orderCount} 項</span>
-                      </div>
-                      <div class="summary-row summary-total">
-                          <span>總金額:</span>
-                          <span>NT$ ${summary.totalAmount.toLocaleString()}</span>
-                      </div>
-                  `;
+      //             // 顯示訂單摘要
+      //             const summaryDiv = document.getElementById('orderSummary');
+      //             summaryDiv.innerHTML = `
+      //                 <div class="summary-row">
+      //                     <span>訂單項目:</span>
+      //                     <span>${summary.orderCount} 項</span>
+      //                 </div>
+      //                 <div class="summary-row summary-total">
+      //                     <span>總金額:</span>
+      //                     <span>NT$ ${summary.totalAmount.toLocaleString()}</span>
+      //                 </div>
+      //             `;
                   
-                  // 顯示繳費記錄
-                  const paymentTbody = document.getElementById('paymentHistoryTableBody');
-                  if (payments.length === 0) {
-                      paymentTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">暫無繳費記錄</td></tr>';
-                  } else {
-                      paymentTbody.innerHTML = payments.map(payment => `
-                          <tr>
-                              <td>${payment.paymentId}</td>
-                              <td>NT$ ${parseFloat(payment.paymentAmount).toLocaleString()}</td>
-                              <td>${payment.paymentMethod}</td>
-                              <td>${new Date(payment.submittedAt).toLocaleString('zh-TW')}</td>
-                              <td><span class="status-badge status-${payment.status === '已確認' ? 'approved' : payment.status === '已拒絕' ? 'rejected' : 'pending'}">${payment.status}</span></td>
-                          </tr>
-                      `).join('');
-                  }
-              })
-              .catch(error => {
-                  console.error('載入會員訂單失敗:', error);
-                  showAlert('載入會員訂單失敗: ' + error.message, 'danger');
-              });
-      }
+      //             // 顯示繳費記錄
+      //             const paymentTbody = document.getElementById('paymentHistoryTableBody');
+      //             if (payments.length === 0) {
+      //                 paymentTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">暫無繳費記錄</td></tr>';
+      //             } else {
+      //                 paymentTbody.innerHTML = payments.map(payment => `
+      //                     <tr>
+      //                         <td>${payment.paymentId}</td>
+      //                         <td>NT$ ${parseFloat(payment.paymentAmount).toLocaleString()}</td>
+      //                         <td>${payment.paymentMethod}</td>
+      //                         <td>${new Date(payment.submittedAt).toLocaleString('zh-TW')}</td>
+      //                         <td><span class="status-badge status-${payment.status === '已確認' ? 'approved' : payment.status === '已拒絕' ? 'rejected' : 'pending'}">${payment.status}</span></td>
+      //                     </tr>
+      //                 `).join('');
+      //             }
+      //         })
+      //         .catch(error => {
+      //             console.error('載入會員訂單失敗:', error);
+      //             showAlert('載入會員訂單失敗: ' + error.message, 'danger');
+      //         });
+      // }
 
       // 編輯訂單
       function editOrder(rowIndex) {
@@ -1569,6 +1569,278 @@
           if (event.target.classList.contains('payment-checkbox')) {
               updateSelectedPayments();
           }
+      });
+
+            // 載入會員訂單（修改版）
+      function loadMemberOrders(lineName) {
+          callAPI('admin-get-member-orders', { lineName: lineName })
+              .then(result => {
+                  const { memberInfo, consolidatedOrders, rawOrders, payments, summary } = result;
+                  
+                  // 顯示會員資訊
+                  const memberInfoDiv = document.getElementById('memberInfo');
+                  memberInfoDiv.innerHTML = `
+                      <div class="summary-row">
+                          <span>會員姓名:</span>
+                          <span>${memberInfo ? memberInfo.realName : '未註冊'}</span>
+                      </div>
+                      <div class="summary-row">
+                          <span>LINE名稱:</span>
+                          <span>${lineName}</span>
+                      </div>
+                      ${memberInfo ? `
+                      <div class="summary-row">
+                          <span>註冊時間:</span>
+                          <span>${new Date(memberInfo.registeredAt).toLocaleString('zh-TW')}</span>
+                      </div>
+                      ` : ''}
+                  `;
+                  
+                  // 顯示合併後的訂單列表
+                  const tbody = document.getElementById('memberOrdersTableBody');
+                  if (consolidatedOrders.length === 0) {
+                      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666;">暫無訂單記錄</td></tr>';
+                  } else {
+                      tbody.innerHTML = consolidatedOrders.map(order => `
+                          <tr ${order.priceVariation ? 'style="background-color: #fff3cd;"' : ''}>
+                              <td>
+                                  ${order.productCode}
+                                  ${order.priceVariation ? '<br><small style="color: #856404;">⚠️ 價格變動</small>' : ''}
+                              </td>
+                              <td>${order.productName}</td>
+                              <td>
+                                  ${order.quantity}
+                                  ${order.rowIndexes.length > 1 ? `<br><small style="color: #666;">(${order.rowIndexes.length} 筆合併)</small>` : ''}
+                              </td>
+                              <td>
+                                  NT$ ${parseFloat(order.unitPrice).toLocaleString()}
+                                  ${order.priceVariation ? '<br><small style="color: #856404;">平均單價</small>' : ''}
+                              </td>
+                              <td>NT$ ${parseFloat(order.totalPrice).toLocaleString()}</td>
+                              <td>
+                                  <button class="btn btn-primary" onclick="showOrderDetails('${order.productCode}')">📋 詳細</button>
+                                  <button class="btn btn-warning" onclick="editConsolidatedOrder('${order.productCode}')">✏️ 編輯</button>
+                              </td>
+                          </tr>
+                      `).join('');
+                  }
+                  
+                  // 顯示訂單摘要
+                  const summaryDiv = document.getElementById('orderSummary');
+                  summaryDiv.innerHTML = `
+                      <div class="summary-row">
+                          <span>原始訂單項目:</span>
+                          <span>${summary.rawOrderCount} 項</span>
+                      </div>
+                      <div class="summary-row">
+                          <span>合併後項目:</span>
+                          <span>${summary.consolidatedOrderCount} 項</span>
+                      </div>
+                      <div class="summary-row summary-total">
+                          <span>總金額:</span>
+                          <span>NT$ ${summary.totalAmount.toLocaleString()}</span>
+                      </div>
+                  `;
+                  
+                  // 顯示繳費記錄
+                  const paymentTbody = document.getElementById('paymentHistoryTableBody');
+                  if (payments.length === 0) {
+                      paymentTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">暫無繳費記錄</td></tr>';
+                  } else {
+                      paymentTbody.innerHTML = payments.map(payment => `
+                          <tr>
+                              <td>${payment.paymentId}</td>
+                              <td>NT$ ${parseFloat(payment.paymentAmount).toLocaleString()}</td>
+                              <td>${payment.paymentMethod}</td>
+                              <td>${new Date(payment.submittedAt).toLocaleString('zh-TW')}</td>
+                              <td><span class="status-badge status-${payment.status === '已確認' ? 'approved' : payment.status === '已拒絕' ? 'rejected' : 'pending'}">${payment.status}</span></td>
+                          </tr>
+                      `).join('');
+                  }
+                  
+                  // 儲存原始訂單資料供編輯使用
+                  window.currentRawOrders = rawOrders;
+                  window.currentConsolidatedOrders = consolidatedOrders;
+              })
+              .catch(error => {
+                  console.error('載入會員訂單失敗:', error);
+                  showAlert('載入會員訂單失敗: ' + error.message, 'danger');
+              });
+      }
+
+      // 顯示訂單詳細資訊
+      function showOrderDetails(productCode) {
+          const consolidatedOrder = window.currentConsolidatedOrders.find(order => order.productCode === productCode);
+          const relatedRawOrders = window.currentRawOrders.filter(order => order.productCode === productCode);
+          
+          if (!consolidatedOrder || !relatedRawOrders) {
+              showAlert('找不到訂單詳細資訊', 'danger');
+              return;
+          }
+          
+          let detailsHtml = `
+              <div class="modal" id="orderDetailsModal" style="display: block;">
+                  <div class="modal-content">
+                      <div class="modal-header">
+                          <h3>📋 ${consolidatedOrder.productName} - 訂單詳細</h3>
+                          <button class="close" onclick="closeModal('orderDetailsModal')">&times;</button>
+                      </div>
+                      
+                      <div class="order-summary">
+                          <div class="summary-row">
+                              <span>產品代號:</span>
+                              <span>${consolidatedOrder.productCode}</span>
+                          </div>
+                          <div class="summary-row">
+                              <span>產品名稱:</span>
+                              <span>${consolidatedOrder.productName}</span>
+                          </div>
+                          <div class="summary-row">
+                              <span>合併後數量:</span>
+                              <span>${consolidatedOrder.quantity}</span>
+                          </div>
+                          <div class="summary-row">
+                              <span>平均單價:</span>
+                              <span>NT$ ${parseFloat(consolidatedOrder.unitPrice).toLocaleString()}</span>
+                          </div>
+                          <div class="summary-row summary-total">
+                              <span>合計金額:</span>
+                              <span>NT$ ${parseFloat(consolidatedOrder.totalPrice).toLocaleString()}</span>
+                          </div>
+                      </div>
+                      
+                      <h4>📝 原始訂單明細</h4>
+                      <div class="table-container">
+                          <table>
+                              <thead>
+                                  <tr>
+                                      <th>數量</th>
+                                      <th>單價</th>
+                                      <th>小計</th>
+                                      <th>操作</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  ${relatedRawOrders.map(order => `
+                                      <tr>
+                                          <td>${order.quantity}</td>
+                                          <td>NT$ ${parseFloat(order.unitPrice).toLocaleString()}</td>
+                                          <td>NT$ ${parseFloat(order.totalPrice).toLocaleString()}</td>
+                                          <td>
+                                              <button class="btn btn-warning" onclick="editOrder(${order.rowIndex}); closeModal('orderDetailsModal')">編輯</button>
+                                              <button class="btn btn-danger" onclick="deleteOrder(${order.rowIndex}); closeModal('orderDetailsModal')">刪除</button>
+                                          </td>
+                                      </tr>
+                                  `).join('')}
+                              </tbody>
+                          </table>
+                      </div>
+                      
+                      <div style="text-align: right; margin-top: 1rem;">
+                          <button class="btn btn-secondary" onclick="closeModal('orderDetailsModal')">關閉</button>
+                      </div>
+                  </div>
+              </div>
+          `;
+          
+          // 移除現有的詳細模態框（如果存在）
+          const existingModal = document.getElementById('orderDetailsModal');
+          if (existingModal) {
+              existingModal.remove();
+          }
+          
+          // 添加新的詳細模態框
+          document.body.insertAdjacentHTML('beforeend', detailsHtml);
+      }
+
+      // 編輯合併訂單（顯示該產品的所有原始訂單）
+      function editConsolidatedOrder(productCode) {
+          const relatedRawOrders = window.currentRawOrders.filter(order => order.productCode === productCode);
+          
+          if (!relatedRawOrders || relatedRawOrders.length === 0) {
+              showAlert('找不到相關訂單', 'danger');
+              return;
+          }
+          
+          // 如果只有一筆訂單，直接編輯
+          if (relatedRawOrders.length === 1) {
+              editOrder(relatedRawOrders[0].rowIndex);
+              return;
+          }
+          
+          // 如果有多筆訂單，顯示選擇介面
+          let editOptionsHtml = `
+              <div class="modal" id="editOptionsModal" style="display: block;">
+                  <div class="modal-content">
+                      <div class="modal-header">
+                          <h3>✏️ 選擇要編輯的訂單</h3>
+                          <button class="close" onclick="closeModal('editOptionsModal')">&times;</button>
+                      </div>
+                      
+                      <p>此產品有 ${relatedRawOrders.length} 筆訂單，請選擇要編輯的項目：</p>
+                      
+                      <div class="table-container">
+                          <table>
+                              <thead>
+                                  <tr>
+                                      <th>數量</th>
+                                      <th>單價</th>
+                                      <th>小計</th>
+                                      <th>操作</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  ${relatedRawOrders.map((order, index) => `
+                                      <tr>
+                                          <td>${order.quantity}</td>
+                                          <td>NT$ ${parseFloat(order.unitPrice).toLocaleString()}</td>
+                                          <td>NT$ ${parseFloat(order.totalPrice).toLocaleString()}</td>
+                                          <td>
+                                              <button class="btn btn-warning" onclick="editOrder(${order.rowIndex}); closeModal('editOptionsModal')">編輯此項</button>
+                                          </td>
+                                      </tr>
+                                  `).join('')}
+                              </tbody>
+                          </table>
+                      </div>
+                      
+                      <div style="text-align: right; margin-top: 1rem;">
+                          <button class="btn btn-primary" onclick="addNewOrder(); closeModal('editOptionsModal')">➕ 新增同產品訂單</button>
+                          <button class="btn btn-secondary" onclick="closeModal('editOptionsModal')">取消</button>
+                      </div>
+                  </div>
+              </div>
+          `;
+          
+          // 移除現有的選項模態框（如果存在）
+          const existingModal = document.getElementById('editOptionsModal');
+          if (existingModal) {
+              existingModal.remove();
+          }
+          
+          // 添加新的選項模態框
+          document.body.insertAdjacentHTML('beforeend', editOptionsHtml);
+      }
+
+      // 修改訂單表格標題
+      function updateOrderTableHeader() {
+          const tableHeader = document.querySelector('#memberOrdersTable thead tr');
+          if (tableHeader) {
+              tableHeader.innerHTML = `
+                  <th>產品代號</th>
+                  <th>產品名稱</th>
+                  <th>合併數量</th>
+                  <th>平均單價</th>
+                  <th>合計金額</th>
+                  <th>操作</th>
+              `;
+          }
+      }
+
+      // 在頁面載入時更新表格標題
+      document.addEventListener('DOMContentLoaded', function() {
+          // 延遲執行以確保 DOM 已完全載入
+          setTimeout(updateOrderTableHeader, 100);
       });
   </script>
 </body>
