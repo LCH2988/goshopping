@@ -862,54 +862,65 @@
       // ==================== API 相關函數 ====================
       async function callAPI(action, data = {}) {
           try {
-              debugLog(`API 呼叫: ${action}`, data);
+              debugLog('API 呼叫', action, data);
               
               if (CONFIG.DEMO_MODE) {
-                  return getDemoData(action, data);
+                  return handleDemoResponse(action, data);
               }
               
-              const params = new URLSearchParams({
-                  action: action,
-                  data: JSON.stringify(data),
-                  callback: 'handleAPIResponse',
-                  _: Date.now()
-              });
+              // 生成唯一的回調函數名稱
+              const callbackName = 'apiCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
               
               return new Promise((resolve, reject) => {
-                  window.handleAPIResponse = (response) => {
-                      debugLog(`API 回應: ${action}`, response);
+                  // 設定超時
+                  const timeout = setTimeout(() => {
+                      cleanup();
+                      reject(new Error('API 請求超時'));
+                  }, CONFIG.API_TIMEOUT);
+                  
+                  // 定義回調函數
+                  window[callbackName] = function(response) {
+                      clearTimeout(timeout);
+                      cleanup();
+                      debugLog('API 回應', action, response);
                       resolve(response);
-                      delete window.handleAPIResponse;
                   };
                   
+                  // 清理函數
+                  function cleanup() {
+                      if (window[callbackName]) {
+                          delete window[callbackName];
+                      }
+                      if (script && script.parentNode) {
+                          script.parentNode.removeChild(script);
+                      }
+                  }
+                  
+                  // 建立 JSONP 請求
                   const script = document.createElement('script');
-                  script.src = `${CONFIG.API_BASE_URL}?${params}`;
-                  script.onerror = () => {
-                      reject(new Error('API 呼叫失敗'));
-                      delete window.handleAPIResponse;
+                  const params = new URLSearchParams({
+                      action: action,
+                      data: JSON.stringify(data),
+                      callback: callbackName,
+                      _: Date.now() // 防止快取
+                  });
+                  
+                  script.src = `${CONFIG.API_BASE_URL}?${params.toString()}`;
+                  script.onerror = function() {
+                      clearTimeout(timeout);
+                      cleanup();
+                      reject(new Error('API 請求失敗'));
                   };
                   
                   document.head.appendChild(script);
-                  
-                  setTimeout(() => {
-                      if (document.head.contains(script)) {
-                          document.head.removeChild(script);
-                      }
-                  }, 1000);
-                  
-                  setTimeout(() => {
-                      if (window.handleAPIResponse) {
-                          reject(new Error('API 呼叫逾時'));
-                          delete window.handleAPIResponse;
-                      }
-                  }, 15000);
               });
               
           } catch (error) {
-              debugLog(`API 呼叫失敗: ${action}`, error);
+              debugLog('API 呼叫錯誤', error);
               throw error;
           }
       }
+
 
       function getDemoData(action, data) {
           debugLog(`使用示範資料: ${action}`, data);
@@ -1737,7 +1748,212 @@
             setupEventHandlers();
         });
 
-        // ==================== 全域錯誤處理 ====================
+
+        // ==================== 示範模式回應處理 ====================
+        function handleDemoResponse(action, data) {
+            debugLog('示範模式回應', action, data);
+            
+            switch (action) {
+                case 'test':
+                    return {
+                        success: true,
+                        message: 'API 連線測試成功 (示範模式)',
+                        timestamp: new Date().toISOString(),
+                        version: '1.0.0-demo'
+                    };
+                    
+                case 'get-config':
+                    return {
+                        success: true,
+                        config: {
+                            basic: {
+                                'API連線狀態顯示': true,
+                                '除錯資訊顯示': true,
+                                'LIFF環境資訊顯示': true,
+                                '繳費證明上傳': '選填',
+                                '備註欄位顯示': true,
+                                '系統維護模式': false
+                            },
+                            paymentMethods: [
+                                { code: 'bank_transfer', name: '銀行轉帳', enabled: true },
+                                { code: 'atm', name: 'ATM轉帳', enabled: true },
+                                { code: 'cash', name: '現金繳費', enabled: true }
+                            ],
+                            messages: {
+                                welcome_message: '歡迎使用實名制登記與繳費系統！(示範模式)',
+                                upload_success: '繳費證明上傳成功！',
+                                upload_error: '上傳失敗，請檢查檔案格式和大小',
+                                registration_success: '實名制登記完成！',
+                                payment_success: '繳費證明提交成功，請等待審核',
+                                system_maintenance: '系統維護中，請稍後再試'
+                            }
+                        }
+                    };
+                    
+                case 'check-registration':
+                    // 模擬已登記用戶
+                    if (data.lineName && data.lineName.includes('示範')) {
+                        return {
+                            success: true,
+                            registered: true,
+                            userData: {
+                                lineName: data.lineName,
+                                realName: '示範用戶',
+                                idNumber: 'A123456789',
+                                phoneNumber: '0912345678',
+                                registrationTime: new Date().toISOString(),
+                                status: '已登記'
+                            }
+                        };
+                    } else {
+                        return {
+                            success: true,
+                            registered: false
+                        };
+                    }
+                    
+                case 'register':
+                    return {
+                        success: true,
+                        message: '實名制登記完成 (示範模式)',
+                        userData: {
+                            lineName: data.lineName,
+                            realName: data.realName,
+                            idNumber: data.idNumber,
+                            phoneNumber: data.phoneNumber,
+                            registrationTime: new Date().toISOString(),
+                            status: '已登記'
+                        }
+                    };
+                    
+                case 'orders':
+                    return {
+                        success: true,
+                        orders: [
+                            {
+                                orderId: 'DEMO001',
+                                lineName: data.lineName,
+                                realName: '示範用戶',
+                                productName: '示範商品A',
+                                quantity: 2,
+                                unitPrice: 500,
+                                totalPrice: 1000,
+                                status: '待付款',
+                                createdAt: new Date().toISOString(),
+                                note: '示範訂單'
+                            },
+                            {
+                                orderId: 'DEMO002',
+                                lineName: data.lineName,
+                                realName: '示範用戶',
+                                productName: '示範商品B',
+                                quantity: 1,
+                                unitPrice: 800,
+                                totalPrice: 800,
+                                status: '待付款',
+                                createdAt: new Date().toISOString(),
+                                note: '示範訂單'
+                            }
+                        ],
+                        totalAmount: 1800,
+                        userData: {
+                            lineName: data.lineName,
+                            realName: '示範用戶',
+                            idNumber: 'A123456789',
+                            phoneNumber: '0912345678',
+                            registrationTime: new Date().toISOString(),
+                            status: '已登記'
+                        }
+                    };
+                    
+                case 'submit-payment':
+                    return {
+                        success: true,
+                        message: '繳費證明提交成功，請等待審核 (示範模式)'
+                    };
+                    
+                case 'check-admin':
+                    return {
+                        success: true,
+                        isAdmin: data.userId === 'demo_admin',
+                        role: data.userId === 'demo_admin' ? 'admin' : 'user',
+                        adminData: data.userId === 'demo_admin' ? {
+                            userId: 'demo_admin',
+                            name: '示範管理員',
+                            role: 'admin'
+                        } : null
+                    };
+                    
+                case 'admin-dashboard':
+                    return {
+                        success: true,
+                        stats: {
+                            totalUsers: 42,
+                            totalOrders: 128,
+                            pendingPayments: 15,
+                            totalAmount: 256000
+                        }
+                    };
+                    
+                case 'admin-users':
+                    return {
+                        success: true,
+                        users: [
+                            {
+                                lineName: '示範用戶1',
+                                realName: '王小明',
+                                idNumber: 'A123456789',
+                                phoneNumber: '0912345678',
+                                registrationTime: new Date().toISOString(),
+                                status: '已登記'
+                            },
+                            {
+                                lineName: '示範用戶2',
+                                realName: '李小華',
+                                idNumber: 'B987654321',
+                                phoneNumber: '0987654321',
+                                registrationTime: new Date().toISOString(),
+                                status: '已登記'
+                            }
+                        ]
+                    };
+                    
+                case 'admin-payments':
+                    return {
+                        success: true,
+                        payments: [
+                            {
+                                paymentId: 'PAY001',
+                                orderId: 'ORDER001',
+                                lineName: '示範用戶1',
+                                realName: '王小明',
+                                paymentAmount: 1000,
+                                paymentMethod: 'bank_transfer',
+                                paymentNote: '示範繳費',
+                                status: '待審核',
+                                submittedAt: new Date().toISOString(),
+                                reviewedAt: null,
+                                reviewedBy: null,
+                                reviewNote: ''
+                            }
+                        ]
+                    };
+                    
+                case 'review-payment':
+                    return {
+                        success: true,
+                        message: '審核完成 (示範模式)'
+                    };
+                    
+                default:
+                    return {
+                        success: false,
+                        message: '未知的操作'
+                    };
+            }
+        }
+
+        // ==================== 錯誤處理改進 ====================
         window.addEventListener('error', function(event) {
             debugLog('全域錯誤', {
                 message: event.message,
@@ -1748,15 +1964,78 @@
             });
             
             console.error('全域錯誤:', event.error);
-            showError('系統發生錯誤，請重新整理頁面');
+            
+            // 如果是 API 相關錯誤，顯示更友善的訊息
+            if (event.message && event.message.includes('handleAPIResponse')) {
+                showError('API 連線發生問題，請檢查網路連線或聯繫系統管理員');
+            } else {
+                showError('系統發生錯誤，請重新整理頁面');
+            }
         });
 
         window.addEventListener('unhandledrejection', function(event) {
             debugLog('未處理的 Promise 拒絕', event.reason);
             console.error('未處理的 Promise 拒絕:', event.reason);
-            showError('系統處理請求時發生錯誤');
+            
+            // 防止錯誤在控制台顯示
+            event.preventDefault();
+            
+            showError('系統處理請求時發生錯誤，請稍後再試');
         });
 
+        // ==================== 除錯工具改進 ====================
+        function testAPIConnection() {
+            if (CONFIG.DEBUG_MODE) {
+                console.log('🔍 測試 API 連線...');
+                
+                callAPI('test')
+                    .then(response => {
+                        console.log('✅ API 測試成功:', response);
+                        showSuccess('API 連線測試成功');
+                    })
+                    .catch(error => {
+                        console.error('❌ API 測試失敗:', error);
+                        showError('API 連線測試失敗: ' + error.message);
+                    });
+            }
+        }
+
+        function testAllAPIs() {
+            if (CONFIG.DEBUG_MODE) {
+                console.log('🔍 測試所有 API...');
+                
+                const testCases = [
+                    { action: 'test', data: {} },
+                    { action: 'get-config', data: {} },
+                    { action: 'check-registration', data: { lineName: '測試用戶' } }
+                ];
+                
+                testCases.forEach(async (testCase, index) => {
+                    try {
+                        console.log(`🧪 測試 ${index + 1}: ${testCase.action}`);
+                        const response = await callAPI(testCase.action, testCase.data);
+                        console.log(`✅ 測試 ${index + 1} 成功:`, response);
+                    } catch (error) {
+                        console.error(`❌ 測試 ${index + 1} 失敗:`, error);
+                    }
+                });
+            }
+        }
+
+        // ==================== 在除錯模式下提供更多工具 ====================
+        if (CONFIG.DEBUG_MODE) {
+            window.debugFunctions = {
+                ...window.debugFunctions,
+                testAPIConnection,
+                testAllAPIs,
+                callAPI,
+                handleDemoResponse
+            };
+            
+            console.log('🛠️ 新增除錯工具:');
+            console.log('- testAPIConnection(): 測試 API 連線');
+            console.log('- testAllAPIs(): 測試所有 API');
+        }
         // ==================== 實用工具函數 ====================
         function formatCurrency(amount) {
             return new Intl.NumberFormat('zh-TW', {
