@@ -4,1701 +4,1754 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>【多福氣】BOGO個人訂購查詢系統</title>
+
+<!-- Favicon 修正 -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+<link rel="alternate icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==">
+
+<!-- 防止 Chrome 擴充功能衝突 -->
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.line-scdn.net https://d.line-scdn.net; object-src 'none';">
+
+<!-- LIFF SDK -->
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
 <style>
-  * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-  }
-  
-  body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
-      background: linear-gradient(135deg, #00B900, #00D300);
-      min-height: 100vh;
-      padding: 15px;
-      line-height: 1.6;
-  }
-  
-  .container {
-      max-width: 420px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-      overflow: hidden;
-      animation: slideUp 0.5s ease-out;
-  }
-  
-  @keyframes slideUp {
-      from {
-          opacity: 0;
-          transform: translateY(30px);
-      }
-      to {
-          opacity: 1;
-          transform: translateY(0);
-      }
-  }
-  
-  .header {
-      background: linear-gradient(45deg, #00B900, #00D300);
-      color: white;
-      padding: 30px 20px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-  }
-  
-  .header::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: repeating-linear-gradient(
-          45deg,
-          transparent,
-          transparent 10px,
-          rgba(255,255,255,0.1) 10px,
-          rgba(255,255,255,0.1) 20px
-      );
-      animation: shimmer 3s linear infinite;
-  }
-  
-  @keyframes shimmer {
-      0% { transform: translateX(-100%) translateY(-100%); }
-      100% { transform: translateX(100%) translateY(100%); }
-  }
-  
-  .header h1 {
-      font-size: 24px;
-      margin-bottom: 8px;
-      position: relative;
-      z-index: 1;
-  }
-  
-  .header p {
-      opacity: 0.9;
-      font-size: 14px;
-      position: relative;
-      z-index: 1;
-  }
-  
-  .content {
-      padding: 25px 20px;
-  }
-  
-  .tab-buttons {
-      display: flex;
-      margin-bottom: 25px;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #f8f9fa;
-      border: 1px solid #e9ecef;
-  }
-  
-  .tab-button {
-      flex: 1;
-      padding: 12px 8px;
-      text-align: center;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      color: #6c757d;
-      position: relative;
-  }
-  
-  .tab-button.active {
-      background: #00B900;
-      color: white;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 185, 0, 0.3);
-  }
-  
-  .tab-button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none;
-  }
-  
-  .tab-button::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      width: 0;
-      height: 2px;
-      background: #00B900;
-      transition: all 0.3s ease;
-      transform: translateX(-50%);
-  }
-  
-  .tab-button.active::after {
-      width: 80%;
-  }
-  
-  .tab-content {
-      display: none;
-      animation: fadeIn 0.3s ease-in;
-  }
-  
-  .tab-content.active {
-      display: block;
-  }
-  
-  @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-  }
-  
-  .form-group {
-      margin-bottom: 20px;
-  }
-  
-  .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #333;
-      font-size: 14px;
-  }
-  
-  .form-group input, .form-group select, .form-group textarea {
-      width: 100%;
-      padding: 14px 16px;
-      border: 2px solid #e9ecef;
-      border-radius: 12px;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      background: #fff;
-  }
-  
-  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-      outline: none;
-      border-color: #00B900;
-      box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.1);
-      transform: translateY(-1px);
-  }
-  
-  .form-group textarea {
-      resize: vertical;
-      min-height: 80px;
-  }
-  
-  .btn {
-      width: 100%;
-      padding: 16px;
-      background: linear-gradient(45deg, #00B900, #00D300);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-  }
-  
-  .btn::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      transition: left 0.5s;
-  }
-  
-  .btn:hover::before {
-      left: 100%;
-  }
-  
-  .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 185, 0, 0.3);
-  }
-  
-  .btn:active {
-      transform: translateY(0);
-  }
-  
-  .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-  }
-  
-  .btn.secondary {
-      background: linear-gradient(45deg, #6c757d, #495057);
-  }
-  
-  .btn.danger {
-      background: linear-gradient(45deg, #dc3545, #c82333);
-  }
-  
-  .btn-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 15px;
-  }
-  
-  .btn-group .btn {
-      flex: 1;
-  }
-  
-  .user-info {
-      background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
-      padding: 20px;
-      border-radius: 15px;
-      margin-bottom: 25px;
-      border: 1px solid #d4edda;
-      position: relative;
-  }
-  
-  .user-info::before {
-      content: '👤';
-      position: absolute;
-      top: 15px;
-      right: 20px;
-      font-size: 24px;
-      opacity: 0.3;
-  }
-  
-  .user-info h3 {
-      color: #00B900;
-      margin-bottom: 15px;
-      font-size: 18px;
-  }
-  
-  .profile-avatar {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      margin: 0 auto 15px;
-      display: block;
-      border: 3px solid #00B900;
-      box-shadow: 0 4px 12px rgba(0, 185, 0, 0.2);
-  }
-  
-  .info-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(0, 185, 0, 0.1);
-      font-size: 14px;
-  }
-  
-  .info-item:last-child {
-      border-bottom: none;
-  }
-  
-  .info-label {
-      font-weight: 600;
-      color: #155724;
-      min-width: 80px;
-  }
-  
-  .info-value {
-      color: #333;
-      text-align: right;
-      word-break: break-all;
-      max-width: 200px;
-  }
-  
-  .welcome-message, .registered-info {
-      background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
-      padding: 25px;
-      border-radius: 15px;
-      text-align: center;
-      margin-bottom: 25px;
-      border: 1px solid #d4edda;
-      position: relative;
-  }
-  
-  .welcome-message::before {
-      content: '👋';
-      position: absolute;
-      top: 15px;
-      right: 20px;
-      font-size: 24px;
-  }
-  
-  .registered-info::before {
-      content: '✅';
-      position: absolute;
-      top: 15px;
-      right: 20px;
-      font-size: 24px;
-  }
-  
-  .welcome-message h3, .registered-info h3 {
-      color: #00B900;
-      margin-bottom: 10px;
-      font-size: 18px;
-  }
-  
-  .welcome-message p, .registered-info p {
-      color: #155724;
-      font-size: 14px;
-      line-height: 1.5;
-  }
-  
-  .order-summary {
-      background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-      padding: 20px;
-      border-radius: 15px;
-      margin-bottom: 20px;
-      border-left: 5px solid #ffc107;
-      position: relative;
-  }
-  
-  .order-summary::before {
-      content: '📋';
-      position: absolute;
-      top: 15px;
-      right: 20px;
-      font-size: 24px;
-  }
-  
-  .order-summary h3 {
-      color: #856404;
-      margin-bottom: 15px;
-      font-size: 18px;
-  }
-  
-  .summary-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(133, 100, 4, 0.2);
-      font-size: 14px;
-  }
-  
-  .summary-item:last-child {
-      border-bottom: none;
-      font-weight: bold;
-      font-size: 16px;
-      color: #856404;
-      margin-top: 10px;
-      padding-top: 15px;
-      border-top: 2px solid rgba(133, 100, 4, 0.3);
-  }
-  
-  .product-list {
-      background: #f8f9fa;
-      padding: 18px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      border: 1px solid #e9ecef;
-  }
-  
-  .product-list h4 {
-      color: #495057;
-      margin-bottom: 15px;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-  }
-  
-  .product-list h4::before {
-      content: '📦';
-  }
-  
-  .product-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding: 12px 0;
-      border-bottom: 1px solid #e9ecef;
-      font-size: 14px;
-  }
-  
-  .product-item:last-child {
-      border-bottom: none;
-  }
-  
-  .product-info {
-      flex: 1;
-  }
-  
-  .product-name {
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 4px;
-  }
-  
-  .product-code {
-      font-size: 12px;
-      color: #6c757d;
-      background: #e9ecef;
-      padding: 2px 6px;
-      border-radius: 4px;
-      display: inline-block;
-  }
-  
-  .product-details {
-      text-align: right;
-      color: #495057;
-      min-width: 100px;
-  }
-  
-  .product-price {
-      font-weight: 600;
-      color: #00B900;
-  }
-  
-  .loading-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px;
-      color: #6c757d;
-  }
-  
-  .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #00B900;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 15px;
-  }
-  
-  @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-  }
-  
-  .error, .success, .warning, .info {
-      padding: 15px 18px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      font-weight: 500;
-      position: relative;
-      animation: slideDown 0.3s ease-out;
-  }
-  
-  @keyframes slideDown {
-      from {
-          opacity: 0;
-          transform: translateY(-10px);
-      }
-      to {
-          opacity: 1;
-          transform: translateY(0);
-      }
-  }
-  
-  .error {
-      background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-      color: #721c24;
-      border-left: 4px solid #dc3545;
-  }
-  
-  .success {
-      background: linear-gradient(135deg, #d4edda, #c3e6cb);
-      color: #155724;
-      border-left: 4px solid #28a745;
-  }
-  
-  .warning {
-      background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-      color: #856404;
-      border-left: 4px solid #ffc107;
-  }
-  
-  .info {
-      background: linear-gradient(135deg, #d1ecf1, #bee5eb);
-      color: #0c5460;
-      border-left: 4px solid #17a2b8;
-  }
-  
-  .lock-message {
-      text-align: center;
-      padding: 50px 20px;
-      color: #6c757d;
-      background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-      border-radius: 15px;
-      margin: 20px 0;
-      border: 2px dashed #dee2e6;
-  }
-  
-  .lock-icon {
-      font-size: 48px;
-      margin-bottom: 15px;
-      opacity: 0.5;
-  }
-  
-  .lock-message h3 {
-      margin-bottom: 10px;
-      color: #495057;
-  }
-  
-  .payment-status {
-      margin-top: 20px;
-  }
-  
-  .payment-item {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 10px;
-      border-left: 4px solid #6c757d;
-  }
-  
-  .payment-item.pending {
-      border-left-color: #ffc107;
-      background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-  }
-  
-  .payment-item.approved {
-      border-left-color: #28a745;
-      background: linear-gradient(135deg, #d4edda, #c3e6cb);
-  }
-  
-  .payment-item.rejected {
-      border-left-color: #dc3545;
-      background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-  }
-  
-  .status-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-  }
-  
-  .status-pending {
-      background: #fff3cd;
-      color: #856404;
-  }
-  
-  .status-approved {
-      background: #d4edda;
-      color: #155724;
-  }
-  
-  .status-rejected {
-      background: #f8d7da;
-      color: #721c24;
-  }
-  
-  .toast {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 15px 20px;
-      border-radius: 12px;
-      color: white;
-      font-weight: 600;
-      z-index: 1000;
-      transform: translateX(100%);
-      transition: transform 0.3s ease;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-      max-width: 300px;
-      word-wrap: break-word;
-  }
-  
-  .image-upload {
-      margin-top: 15px;
-  }
-  
-  .image-preview {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 10px;
-  }
-  
-  .image-preview img {
-      width: 80px;
-      height: 80px;
-      object-fit: cover;
-      border-radius: 8px;
-      border: 2px solid #e9ecef;
-  }
-  
-  .cache-info {
-      font-size: 12px;
-      color: #6c757d;
-      text-align: center;
-      margin-top: 10px;
-      padding: 8px;
-      background: #f8f9fa;
-      border-radius: 6px;
-  }
-  
-  .network-status {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      padding: 5px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      z-index: 1001;
-  }
-  
-  .network-online {
-      background: #d4edda;
-      color: #155724;
-  }
-  
-  .network-offline {
-      background: #f8d7da;
-      color: #721c24;
-  }
-  
-  /* 響應式設計 */
-  @media (max-width: 480px) {
-      body {
-          padding: 10px;
-      }
-      
-      .container {
-          border-radius: 15px;
-      }
-      
-      .header {
-          padding: 25px 15px;
-      }
-      
-      .content {
-          padding: 20px 15px;
-      }
-      
-      .btn-group {
-          flex-direction: column;
-      }
-      
-      .btn-group .btn {
-          margin-bottom: 10px;
-      }
-      
-      .tab-button {
-          font-size: 12px;
-          padding: 10px 6px;
-      }
-      
-      .toast {
-          right: 10px;
-          left: 10px;
-          max-width: none;
-          transform: translateY(-100%);
-      }
-      
-      .toast.show {
-          transform: translateY(0);
-      }
-  }
-  
-  /* 深色模式支援 */
-  @media (prefers-color-scheme: dark) {
-      body {
-          background: linear-gradient(135deg, #1a5d1a, #2d8f2d);
-      }
-      
-      .container {
-          background: #2d2d2d;
-          color: #ffffff;
-      }
-      
-      .form-group input,
-      .form-group select,
-      .form-group textarea {
-          background: #404040;
-          color: #ffffff;
-          border-color: #555555;
-      }
-      
-      .product-list {
-          background: #404040;
-          border-color: #555555;
-      }
-      
-      .tab-buttons {
-          background: #404040;
-          border-color: #555555;
-      }
-      
-      .lock-message {
-          background: linear-gradient(135deg, #404040, #555555);
-          border-color: #666666;
-          color: #cccccc;
-      }
-  }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+    background: linear-gradient(135deg, #00B900, #00D300);
+    min-height: 100vh;
+    padding: 15px;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 420px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    overflow: hidden;
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.header {
+    background: linear-gradient(45deg, #00B900, #00D300);
+    color: white;
+    padding: 30px 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(255,255,255,0.1) 10px,
+        rgba(255,255,255,0.1) 20px
+    );
+    animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) translateY(-100%); }
+    100% { transform: translateX(100%) translateY(100%); }
+}
+
+.header h1 {
+    font-size: 24px;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.header p {
+    opacity: 0.9;
+    font-size: 14px;
+    position: relative;
+    z-index: 1;
+}
+
+.content {
+    padding: 25px 20px;
+}
+
+.tab-buttons {
+    display: flex;
+    margin-bottom: 25px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 12px 8px;
+    text-align: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    color: #6c757d;
+    position: relative;
+}
+
+.tab-button.active {
+    background: #00B900;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 185, 0, 0.3);
+}
+
+.tab-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.tab-button::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: #00B900;
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+.tab-button.active::after {
+    width: 80%;
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background: #fff;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: #00B900;
+    box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(45deg, #00B900, #00D300);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 185, 0, 0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn.secondary {
+    background: linear-gradient(45deg, #6c757d, #495057);
+}
+
+.btn.danger {
+    background: linear-gradient(45deg, #dc3545, #c82333);
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-group .btn {
+    flex: 1;
+}
+
+.user-info {
+    background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+    border: 1px solid #d4edda;
+    position: relative;
+}
+
+.user-info::before {
+    content: '👤';
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+    opacity: 0.3;
+}
+
+.user-info h3 {
+    color: #00B900;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.profile-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    display: block;
+    border: 3px solid #00B900;
+    box-shadow: 0 4px 12px rgba(0, 185, 0, 0.2);
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0, 185, 0, 0.1);
+    font-size: 14px;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #155724;
+    min-width: 80px;
+}
+
+.info-value {
+    color: #333;
+    text-align: right;
+    word-break: break-all;
+    max-width: 200px;
+}
+
+.welcome-message, .registered-info {
+    background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+    padding: 25px;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 25px;
+    border: 1px solid #d4edda;
+    position: relative;
+}
+
+.welcome-message::before {
+    content: '👋';
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+}
+
+.registered-info::before {
+    content: '✅';
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+}
+
+.welcome-message h3, .registered-info h3 {
+    color: #00B900;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.welcome-message p, .registered-info p {
+    color: #155724;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.order-summary {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    border-left: 5px solid #ffc107;
+    position: relative;
+}
+
+.order-summary::before {
+    content: '📋';
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+}
+
+.order-summary h3 {
+    color: #856404;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(133, 100, 4, 0.2);
+    font-size: 14px;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+    font-weight: bold;
+    font-size: 16px;
+    color: #856404;
+    margin-top: 10px;
+    padding-top: 15px;
+    border-top: 2px solid rgba(133, 100, 4, 0.3);
+}
+
+.product-list {
+    background: #f8f9fa;
+    padding: 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.product-list h4 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.product-list h4::before {
+    content: '📦';
+}
+
+.product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px 0;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 14px;
+}
+
+.product-item:last-child {
+    border-bottom: none;
+}
+
+.product-info {
+    flex: 1;
+}
+
+.product-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.product-code {
+    font-size: 12px;
+    color: #6c757d;
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.product-details {
+    text-align: right;
+    color: #495057;
+    min-width: 100px;
+}
+
+.product-price {
+    font-weight: 600;
+    color: #00B900;
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #00B900;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error, .success, .warning, .info {
+    padding: 15px 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.error {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.success {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.warning {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+.info {
+    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+    color: #0c5460;
+    border-left: 4px solid #17a2b8;
+}
+
+.lock-message {
+    text-align: center;
+    padding: 50px 20px;
+    color: #6c757d;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 15px;
+    margin: 20px 0;
+    border: 2px dashed #dee2e6;
+}
+
+.lock-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.lock-message h3 {
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.payment-status {
+    margin-top: 20px;
+}
+
+.payment-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border-left: 4px solid #6c757d;
+}
+
+.payment-item.pending {
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+}
+
+.payment-item.approved {
+    border-left-color: #28a745;
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+}
+
+.payment-item.rejected {
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-approved {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+.image-upload {
+    margin-top: 15px;
+}
+
+.image-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.image-preview img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+}
+
+.cache-info {
+    font-size: 12px;
+    color: #6c757d;
+    text-align: center;
+    margin-top: 10px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.network-status {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 1001;
+}
+
+.network-online {
+    background: #d4edda;
+    color: #155724;
+}
+
+.network-offline {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* 響應式設計 */
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        border-radius: 15px;
+    }
+    
+    .header {
+        padding: 25px 15px;
+    }
+    
+    .content {
+        padding: 20px 15px;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 10px;
+    }
+    
+    .tab-button {
+        font-size: 12px;
+        padding: 10px 6px;
+    }
+    
+    .toast {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        transform: translateY(-100%);
+    }
+    
+    .toast.show {
+        transform: translateY(0);
+    }
+}
+
+/* 深色模式支援 */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: linear-gradient(135deg, #1a5d1a, #2d8f2d);
+    }
+    
+    .container {
+        background: #2d2d2d;
+        color: #ffffff;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        background: #404040;
+        color: #ffffff;
+        border-color: #555555;
+    }
+    
+    .product-list {
+        background: #404040;
+        border-color: #555555;
+    }
+    
+    .tab-buttons {
+        background: #404040;
+        border-color: #555555;
+    }
+    
+    .lock-message {
+        background: linear-gradient(135deg, #404040, #555555);
+        border-color: #666666;
+        color: #cccccc;
+    }
+}
 </style>
 </head>
 <body>
 <div id="networkStatus" class="network-status network-online" style="display: none;">
-  🌐 線上
+🌐 線上
 </div>
 
 <div class="container">
-  <div class="header">
-      <h1>🛒 訂購管理系統</h1>
-      <p>實名制登記 · 訂單查詢 · 繳費回報</p>
-  </div>
-  
-  <div class="content">
-      <!-- 用戶資訊顯示 -->
-      <div id="userInfo" class="user-info" style="display: none;">
-          <h3>用戶資訊</h3>
-          <img id="userAvatar" class="profile-avatar" style="display: none;">
-          <div id="userDetails"></div>
-      </div>
-      
-      <!-- 標籤頁按鈕 -->
-      <div class="tab-buttons">
-          <button class="tab-button active" onclick="switchTab('register', event)">實名登記</button>
-          <button class="tab-button" id="ordersTab" onclick="switchTab('orders', event)" disabled>我的訂單</button>
-          <button class="tab-button" id="paymentTab" onclick="switchTab('payment', event)" disabled>繳費回報</button>
-          <button class="tab-button" id="statusTab" onclick="switchTab('status', event)" disabled>繳費狀態</button>
-      </div>
-      
-      <!-- 實名制登記 -->
-      <div id="register" class="tab-content active">
-          <!-- 未註冊狀態 -->
-          <div id="registerForm" style="display: none;">
-              <div class="welcome-message">
-                  <h3>歡迎使用訂購系統</h3>
-                  <p>請先完成實名制登記，即可查詢訂單及進行繳費回報。我們會保護您的個人資料安全。</p>
-              </div>
-              
-              <h2 style="margin-bottom: 20px; color: #333;">📝 實名制登記</h2>
-              <form id="nameForm">
-                  <div class="form-group">
-                      <label for="realNameInput">真實姓名 *</label>
-                      <input type="text" id="realNameInput" name="realName" required 
-                             placeholder="請輸入您的真實姓名" maxlength="20">
-                      <small style="color: #6c757d; font-size: 12px;">請輸入2-20個字的真實姓名</small>
-                  </div>
-                  
-                  <div class="form-group">
-                      <label for="phoneInput">聯絡電話 (選填)</label>
-                      <input type="tel" id="phoneInput" name="phone" 
-                             placeholder="請輸入聯絡電話" maxlength="15">
-                      <small style="color: #6c757d; font-size: 12px;">方便聯絡時使用</small>
-                  </div>
-                  
-                  <button type="submit" class="btn" id="registerSubmitBtn">
-                      <span>完成登記</span>
-                  </button>
-              </form>
-          </div>
-          
-          <!-- 已註冊狀態 -->
-          <div id="registeredStatus" style="display: none;">
-              <div class="registered-info">
-                  <h3>實名制登記完成</h3>
-                  <p>您已完成實名制登記，可以使用所有功能。感謝您的配合！</p>
-              </div>
-              
-              <div class="btn-group">
-                  <button class="btn" onclick="switchTab('orders', event)">查看我的訂單</button>
-                  <button class="btn secondary" onclick="switchTab('payment', event)">進行繳費回報</button>
-              </div>
-          </div>
-      </div>
-      
-      <!-- 訂單查詢 -->
-      <div id="orders" class="tab-content">
-          <div id="ordersContent">
-              <div class="lock-message">
-                  <div class="lock-icon">🔒</div>
-                  <h3>請先完成實名制登記</h3>
-                  <p>完成登記後即可查詢您的訂單資訊</p>
-              </div>
-          </div>
-      </div>
-      
-      <!-- 繳費回報 -->
-      <div id="payment" class="tab-content">
-          <div id="paymentContent">
-              <div class="lock-message">
-                  <div class="lock-icon">🔒</div>
-                  <h3>請先完成實名制登記</h3>
-                  <p>完成登記後即可進行繳費回報</p>
-              </div>
-          </div>
-      </div>
-      
-      <!-- 繳費狀態 -->
-      <div id="status" class="tab-content">
-          <div id="statusContent">
-              <div class="lock-message">
-                  <div class="lock-icon">🔒</div>
-                  <h3>請先完成實名制登記</h3>
-                  <p>完成登記後即可查看繳費狀態</p>
-              </div>
-          </div>
-      </div>
-  </div>
+<div class="header">
+    <h1>🛒 訂購管理系統</h1>
+    <p>實名制登記 · 訂單查詢 · 繳費回報</p>
+</div>
+
+<div class="content">
+    <!-- 用戶資訊顯示 -->
+    <div id="userInfo" class="user-info" style="display: none;">
+        <h3>用戶資訊</h3>
+        <img id="userAvatar" class="profile-avatar" style="display: none;">
+        <div id="userDetails"></div>
+    </div>
+    
+    <!-- 標籤頁按鈕 -->
+    <div class="tab-buttons">
+        <button class="tab-button active" onclick="switchTab('register', event)">實名登記</button>
+        <button class="tab-button" id="ordersTab" onclick="switchTab('orders', event)" disabled>我的訂單</button>
+        <button class="tab-button" id="paymentTab" onclick="switchTab('payment', event)" disabled>繳費回報</button>
+        <button class="tab-button" id="statusTab" onclick="switchTab('status', event)" disabled>繳費狀態</button>
+    </div>
+    
+    <!-- 實名制登記 -->
+    <div id="register" class="tab-content active">
+        <!-- 未註冊狀態 -->
+        <div id="registerForm" style="display: none;">
+            <div class="welcome-message">
+                <h3>歡迎使用訂購系統</h3>
+                <p>請先完成實名制登記，即可查詢訂單及進行繳費回報。我們會保護您的個人資料安全。</p>
+            </div>
+            
+            <h2 style="margin-bottom: 20px; color: #333;">📝 實名制登記</h2>
+            <form id="nameForm">
+                <div class="form-group">
+                    <label for="realNameInput">真實姓名 *</label>
+                    <input type="text" id="realNameInput" name="realName" required 
+                           placeholder="請輸入您的真實姓名" maxlength="20">
+                    <small style="color: #6c757d; font-size: 12px;">請輸入2-20個字的真實姓名</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phoneInput">聯絡電話 (選填)</label>
+                    <input type="tel" id="phoneInput" name="phone" 
+                           placeholder="請輸入聯絡電話" maxlength="15">
+                    <small style="color: #6c757d; font-size: 12px;">方便聯絡時使用</small>
+                </div>
+                
+                <button type="submit" class="btn" id="registerSubmitBtn">
+                    <span>完成登記</span>
+                </button>
+            </form>
+        </div>
+        
+        <!-- 已註冊狀態 -->
+        <div id="registeredStatus" style="display: none;">
+            <div class="registered-info">
+                <h3>實名制登記完成</h3>
+                <p>您已完成實名制登記，可以使用所有功能。感謝您的配合！</p>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn" onclick="switchTab('orders', event)">查看我的訂單</button>
+                <button class="btn secondary" onclick="switchTab('payment', event)">進行繳費回報</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 訂單查詢 -->
+    <div id="orders" class="tab-content">
+        <div id="ordersContent">
+            <div class="lock-message">
+                <div class="lock-icon">🔒</div>
+                <h3>請先完成實名制登記</h3>
+                <p>完成登記後即可查詢您的訂單資訊</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 繳費回報 -->
+    <div id="payment" class="tab-content">
+        <div id="paymentContent">
+            <div class="lock-message">
+                <div class="lock-icon">🔒</div>
+                <h3>請先完成實名制登記</h3>
+                <p>完成登記後即可進行繳費回報</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 繳費狀態 -->
+    <div id="status" class="tab-content">
+        <div id="statusContent">
+            <div class="lock-message">
+                <div class="lock-icon">🔒</div>
+                <h3>請先完成實名制登記</h3>
+                <p>完成登記後即可查看繳費狀態</p>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 
 <script>
-  // 設定區域 - 請修改為您的實際值
-  const CONFIG = {
-      LIFF_ID: '1657285806-2bmkYWkN', // 請替換為實際的 LIFF ID
-      API_BASE_URL: 'https://script.google.com/macros/s/AKfycbyCMhikwG2xECfB8KP3oU0W6qKJIBz-Vro-kq1LNEn3SUgfDgEBmCzyeVaYoeGp68Fk/exec', // 請替換為 GAS 部署網址
-      DEBUG_MODE: false, // 開發時設為 true，正式環境設為 false
-      MAX_RETRY_COUNT: 3,
-      RETRY_DELAY: 1000,
-      CACHE_EXPIRY: 5 * 60 * 1000, // 5分鐘快取
-      MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-      ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'image/gif']
-  };
+// 設定區域 - 請修改為您的實際值
+const CONFIG = {
+    LIFF_ID: '1657285806-2bmkYWkN', // 請替換為實際的 LIFF ID
+    API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwklCy7NnKtnfPg4wdj8HemZM1l79Sha3yLj1juRaWKeiiQKLAVNjGmFa6aaDh6G3Mz/exec', // 請替換為 GAS 部署網址
+    DEBUG_MODE: false, // 開發時設為 true，正式環境設為 false
+    MAX_RETRY_COUNT: 3,
+    RETRY_DELAY: 1000,
+    CACHE_EXPIRY: 5 * 60 * 1000, // 5分鐘快取
+    MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
+    ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'image/gif']
+};
 
-  // 全域變數
-  let userId = null;
-  let userProfile = null;
-  let liffContext = null;
-  let liffEnvironment = null;
-  let isRegistered = false;
-  let userRegistrationData = null;
-  let currentOrderSummary = null;
-  let apiConnected = false;
-  let dataCache = new Map();
-  let isOnline = navigator.onLine;
+// 全域變數
+let userId = null;
+let userProfile = null;
+let liffContext = null;
+let liffEnvironment = null;
+let isRegistered = false;
+let userRegistrationData = null;
+let currentOrderSummary = null;
+let apiConnected = false;
+let dataCache = new Map();
+let isOnline = navigator.onLine;
 
-  // 快取管理類別
-  class CacheManager {
-      static set(key, data, expiry = CONFIG.CACHE_EXPIRY) {
-          const item = {
-              data: data,
-              timestamp: Date.now(),
-              expiry: expiry
-          };
-          dataCache.set(key, item);
-          
-          // 同時存到 localStorage
-          try {
-              localStorage.setItem(`cache_${key}`, JSON.stringify(item));
-          } catch (e) {
-              debugLog('localStorage 存儲失敗', e);
-          }
-      }
-      
-      static get(key) {
-          let item = dataCache.get(key);
-          
-          // 如果記憶體中沒有，嘗試從 localStorage 讀取
-          if (!item) {
-              try {
-                  const stored = localStorage.getItem(`cache_${key}`);
-                  if (stored) {
-                      item = JSON.parse(stored);
-                      dataCache.set(key, item);
-                  }
-              } catch (e) {
-                  debugLog('localStorage 讀取失敗', e);
-              }
-          }
-          
-          if (!item) return null;
-          
-          // 檢查是否過期
-          if (Date.now() - item.timestamp > item.expiry) {
-              this.delete(key);
-              return null;
-          }
-          
-          return item.data;
-      }
+// 快取管理類別
+class CacheManager {
+    static set(key, data, expiry = CONFIG.CACHE_EXPIRY) {
+        const item = {
+            data: data,
+            timestamp: Date.now(),
+            expiry: expiry
+        };
+        dataCache.set(key, item);
+        
+        // 同時存到 localStorage
+        try {
+            localStorage.setItem(`cache_${key}`, JSON.stringify(item));
+        } catch (e) {
+            debugLog('localStorage 存儲失敗', e);
+        }
+    }
+    
+    static get(key) {
+        let item = dataCache.get(key);
+        
+        // 如果記憶體中沒有，嘗試從 localStorage 讀取
+        if (!item) {
+            try {
+                const stored = localStorage.getItem(`cache_${key}`);
+                if (stored) {
+                    item = JSON.parse(stored);
+                    dataCache.set(key, item);
+                }
+            } catch (e) {
+                debugLog('localStorage 讀取失敗', e);
+            }
+        }
+        
+        if (!item) return null;
+        
+        // 檢查是否過期
+        if (Date.now() - item.timestamp > item.expiry) {
+            this.delete(key);
+            return null;
+        }
+        
+        return item.data;
+    }
  
-      static delete(key) {
-          dataCache.delete(key);
-          try {
-              localStorage.removeItem(`cache_${key}`);
-          } catch (e) {
-              debugLog('localStorage 刪除失敗', e);
-          }
-      }
-      
-      static clear() {
-          dataCache.clear();
-          try {
-              const keys = Object.keys(localStorage);
-              keys.forEach(key => {
-                  if (key.startsWith('cache_')) {
-                      localStorage.removeItem(key);
-                  }
-              });
-          } catch (e) {
-              debugLog('localStorage 清除失敗', e);
-          }
-      }
-  }
+    static delete(key) {
+        dataCache.delete(key);
+        try {
+            localStorage.removeItem(`cache_${key}`);
+        } catch (e) {
+            debugLog('localStorage 刪除失敗', e);
+        }
+    }
+    
+    static clear() {
+        dataCache.clear();
+        try {
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.startsWith('cache_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+        } catch (e) {
+            debugLog('localStorage 清除失敗', e);
+        }
+    }
+}
 
-  // 除錯函數
-  function debugLog(message, data = null) {
-      if (CONFIG.DEBUG_MODE) {
-          console.log(`[DEBUG] ${message}`, data || '');
-      }
-  }
+// 除錯函數
+function debugLog(message, data = null) {
+    if (CONFIG.DEBUG_MODE) {
+        console.log(`[DEBUG] ${message}`, data || '');
+    }
+}
 
-  // UI 管理類別
-  class UIManager {
-      static showLoading(elementId, message = '載入中...') {
-          const element = document.getElementById(elementId);
-          if (element) {
-              element.innerHTML = `
-                  <div class="loading-container">
-                      <div class="loading-spinner"></div>
-                      <p>${message}</p>
-                  </div>
-              `;
-          }
-      }
-      
-      static hideLoading(elementId) {
-          const element = document.getElementById(elementId);
-          if (element) {
-              element.innerHTML = '';
-          }
-      }
-      
-      static showToast(message, type = 'info', duration = 3000) {
-          const toast = document.createElement('div');
-          toast.className = `toast toast-${type}`;
-          toast.textContent = message;
-          
-          const colors = {
-              success: '#28a745',
-              error: '#dc3545',
-              warning: '#ffc107',
-              info: '#17a2b8'
-          };
-          toast.style.backgroundColor = colors[type] || colors.info;
-          
-          document.body.appendChild(toast);
-          
-          setTimeout(() => {
-              toast.style.transform = window.innerWidth <= 480 ? 'translateY(0)' : 'translateX(0)';
-              toast.classList.add('show');
-          }, 100);
-          
-          setTimeout(() => {
-              toast.style.transform = window.innerWidth <= 480 ? 'translateY(-100%)' : 'translateX(100%)';
-              toast.classList.remove('show');
-              setTimeout(() => {
-                  if (toast.parentNode) {
-                      toast.parentNode.removeChild(toast);
-                  }
-              }, 300);
-          }, duration);
-      }
-      
-      static updateNetworkStatus(online) {
-          const statusElement = document.getElementById('networkStatus');
-          if (statusElement) {
-              statusElement.style.display = 'block';
-              statusElement.className = `network-status ${online ? 'network-online' : 'network-offline'}`;
-              statusElement.textContent = online ? '🌐 線上' : '📵 離線';
-          }
-      }
-      
-      static showCacheInfo(elementId, cacheTime) {
-          const element = document.getElementById(elementId);
-          if (element && cacheTime) {
-              const cacheDiv = document.createElement('div');
-              cacheDiv.className = 'cache-info';
-              cacheDiv.textContent = `資料更新時間: ${new Date(cacheTime).toLocaleString('zh-TW')}`;
-              element.appendChild(cacheDiv);
-          }
-      }
-  }
+// UI 管理類別
+class UIManager {
+    static showLoading(elementId, message = '載入中...') {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+    }
+    
+    static hideLoading(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = '';
+        }
+    }
+    
+    static showToast(message, type = 'info', duration = 3000) {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        
+        const colors = {
+            success: '#28a745',
+            error: '#dc3545',
+            warning: '#ffc107',
+            info: '#17a2b8'
+        };
+        toast.style.backgroundColor = colors[type] || colors.info;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }, duration);
+    }
+    
+    static updateNetworkStatus(online) {
+        const statusElement = document.getElementById('networkStatus');
+        if (statusElement) {
+            statusElement.style.display = 'block';
+            statusElement.className = `network-status ${online ? 'network-online' : 'network-offline'}`;
+            statusElement.textContent = online ? '🌐 線上' : '📵 離線';
+        }
+    }
+    
+    static showCacheInfo(elementId, cacheTime) {
+        const element = document.getElementById(elementId);
+        if (element && cacheTime) {
+            const cacheDiv = document.createElement('div');
+            cacheDiv.className = 'cache-info';
+            cacheDiv.textContent = `資料更新時間: ${new Date(cacheTime).toLocaleString('zh-TW')}`;
+            element.appendChild(cacheDiv);
+        }
+    }
+}
 
-  // 表單驗證類別
-  class FormValidator {
-      static validateRealName(name) {
-          if (!name || name.trim().length < 2) {
-              return { valid: false, message: '請輸入至少2個字的真實姓名' };
-          }
-          
-          if (name.length > 20) {
-              return { valid: false, message: '姓名長度不能超過20個字' };
-          }
-          
-          const invalidChars = /[<>\"'&]/;
-          if (invalidChars.test(name)) {
-              return { valid: false, message: '姓名不能包含特殊字符' };
-          }
-          
-          return { valid: true };
-      }
-      
-      static validatePhone(phone) {
-          if (!phone) return { valid: true }; // 選填欄位
-          
-          const phoneRegex = /^[0-9\-\+\(\)\s]{8,15}$/;
-          if (!phoneRegex.test(phone)) {
-              return { valid: false, message: '請輸入有效的電話號碼' };
-          }
-          
-          return { valid: true };
-      }
-      
-      static validatePaymentNote(note) {
-          if (note && note.length > 200) {
-              return { valid: false, message: '備註長度不能超過200個字' };
-          }
-          
-          return { valid: true };
-      }
-      
-      static validateFile(file) {
-          if (!file) return { valid: true };
-          
-          if (file.size > CONFIG.MAX_FILE_SIZE) {
-              return { valid: false, message: '檔案大小不能超過5MB' };
-          }
-          
-          if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
-              return { valid: false, message: '只支援 JPG、PNG、GIF 格式' };
-          }
-          
-          return { valid: true };
-      }
-  }
+// 表單驗證類別
+class FormValidator {
+    static validateRealName(name) {
+        if (!name || name.trim().length < 2) {
+            return { valid: false, message: '請輸入至少2個字的真實姓名' };
+        }
+        
+        if (name.length > 20) {
+            return { valid: false, message: '姓名長度不能超過20個字' };
+        }
+        
+        const invalidChars = /[<>\"'&]/;
+        if (invalidChars.test(name)) {
+            return { valid: false, message: '姓名不能包含特殊字符' };
+        }
+        
+        return { valid: true };
+    }
+    
+    static validatePhone(phone) {
+        if (!phone) return { valid: true }; // 選填欄位
+        
+        const phoneRegex = /^[0-9\-\+\(\)\s]{8,15}$/;
+        if (!phoneRegex.test(phone)) {
+            return { valid: false, message: '請輸入有效的電話號碼' };
+        }
+        
+        return { valid: true };
+    }
+    
+    static validatePaymentNote(note) {
+        if (note && note.length > 200) {
+            return { valid: false, message: '備註長度不能超過200個字' };
+        }
+        
+        return { valid: true };
+    }
+    
+    static validateFile(file) {
+        if (!file) return { valid: true };
+        
+        if (file.size > CONFIG.MAX_FILE_SIZE) {
+            return { valid: false, message: '檔案大小不能超過5MB' };
+        }
+        
+        if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
+            return { valid: false, message: '只支援 JPG、PNG、GIF 格式' };
+        }
+        
+        return { valid: true };
+    }
+}
 
-  // 檔案處理類別
-  class FileHandler {
-      static async compressImage(file, maxWidth = 800, quality = 0.8) {
-          return new Promise((resolve) => {
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              const img = new Image();
-              
-              img.onload = function() {
-                  const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-                  canvas.width = img.width * ratio;
-                  canvas.height = img.height * ratio;
-                  
-                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                  
-                  canvas.toBlob(resolve, 'image/jpeg', quality);
-              };
-              
-              img.src = URL.createObjectURL(file);
-          });
-      }
-      
-      static async fileToBase64(file) {
-          return new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.onerror = reject;
-              reader.readAsDataURL(file);
-          });
-      }
-  }
+// 檔案處理類別
+class FileHandler {
+    static async compressImage(file, maxWidth = 800, quality = 0.8) {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = function() {
+                const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+                canvas.width = img.width * ratio;
+                canvas.height = img.height * ratio;
+                
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                canvas.toBlob(resolve, 'image/jpeg', quality);
+            };
+            
+            img.src = URL.createObjectURL(file);
+        });
+    }
+    
+    static async fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+}
 
-  // 初始化應用程式
-  window.onload = function() {
-      debugLog('開始初始化應用程式');
-      initializeApp();
-  };
+// 錯誤處理函數
+function handleError(error, context = '') {
+    console.error(`錯誤 [${context}]:`, error);
+    
+    // 記錄錯誤到本地存儲（用於除錯）
+    if (CONFIG.DEBUG_MODE) {
+        const errorLog = {
+            timestamp: new Date().toISOString(),
+            context: context,
+            error: error.toString(),
+            stack: error.stack
+        };
+        
+        let logs = JSON.parse(localStorage.getItem('errorLogs') || '[]');
+        logs.push(errorLog);
+        
+        // 只保留最近 50 筆錯誤記錄
+        if (logs.length > 50) {
+            logs = logs.slice(-50);
+        }
+        
+        localStorage.setItem('errorLogs', JSON.stringify(logs));
+    }
+    
+    // 顯示用戶友好的錯誤訊息
+    let userMessage = '系統發生錯誤，請稍後再試';
+    
+    if (error.message && error.message.includes('network')) {
+        userMessage = '網路連線異常，請檢查網路狀態';
+    } else if (error.message && error.message.includes('LIFF')) {
+        userMessage = 'LINE 應用程式初始化失敗，請重新開啟';
+    }
+    
+    UIManager.showToast(userMessage, 'error');
+}
 
-  async function initializeApp() {
-      try {
-          // 初始化網路狀態監控
-          initializeNetworkMonitoring();
-          
-          // 初始化 LIFF
-          await initializeLiff();
-          
-      } catch (error) {
-          debugLog('應用程式初始化失敗', error);
-          showError('系統初始化失敗，請重新開啟: ' + error.message);
-      }
-  }
+// 初始化應用程式
+function initializeApp() {
+    try {
+        debugLog('開始初始化應用程式');
+        
+        // 初始化網路狀態監控
+        initializeNetworkMonitoring();
+        
+        // 初始化 LIFF
+        initializeLiff();
+        
+    } catch (error) {
+        debugLog('應用程式初始化失敗', error);
+        handleError(error, '應用程式初始化');
+    }
+}
 
-  function initializeNetworkMonitoring() {
-      UIManager.updateNetworkStatus(isOnline);
-      
-      window.addEventListener('online', function() {
-          isOnline = true;
-          UIManager.updateNetworkStatus(true);
-          UIManager.showToast('網路連線已恢復', 'success');
-          if (!apiConnected) {
-              testApiConnection();
-          }
-      });
+function initializeNetworkMonitoring() {
+    UIManager.updateNetworkStatus(isOnline);
+    
+    window.addEventListener('online', function() {
+        isOnline = true;
+        UIManager.updateNetworkStatus(true);
+        UIManager.showToast('網路連線已恢復', 'success');
+        if (!apiConnected) {
+            testApiConnection();
+        }
+    });
 
-      window.addEventListener('offline', function() {
-          isOnline = false;
-          UIManager.updateNetworkStatus(false);
-          UIManager.showToast('網路連線中斷，將使用快取資料', 'warning');
-      });
-  }
+    window.addEventListener('offline', function() {
+        isOnline = false;
+        UIManager.updateNetworkStatus(false);
+        UIManager.showToast('網路連線中斷，將使用快取資料', 'warning');
+    });
+}
 
-  async function initializeLiff() {
-      try {
-          debugLog('LIFF 初始化中...', { liffId: CONFIG.LIFF_ID });
-          
-          await liff.init({ liffId: CONFIG.LIFF_ID });
-          debugLog('LIFF 初始化成功');
-          
-          await collectLiffEnvironmentInfo();
-          
-          if (liff.isLoggedIn()) {
-              debugLog('用戶已登入');
-              userProfile = await liff.getProfile();
-              userId = userProfile.userId;
-              
-              debugLog('取得用戶資料', {
-                  userId: userId,
-                  displayName: userProfile.displayName
-              });
-              
-              displayUserInfo();
-              await testApiConnection();
-              await checkUserRegistration();
-          } else {
-              debugLog('用戶未登入，導向登入頁面');
-              liff.login();
-          }
-      } catch (error) {
-          debugLog('LIFF初始化失敗', error);
-          console.error('LIFF初始化失敗:', error);
-          showError('系統初始化失敗，請重新開啟: ' + error.message);
-      }
-  }
+async function initializeLiff() {
+    try {
+        debugLog('LIFF 初始化中...', { liffId: CONFIG.LIFF_ID });
+        
+        // 檢查 LIFF SDK 是否載入
+        if (typeof liff === 'undefined') {
+            throw new Error('LIFF SDK 未載入');
+        }
+        
+        await liff.init({ liffId: CONFIG.LIFF_ID });
+        debugLog('LIFF 初始化成功');
+        
+        await collectLiffEnvironmentInfo();
+        
+        if (liff.isLoggedIn()) {
+            debugLog('用戶已登入');
+            userProfile = await liff.getProfile();
+            userId = userProfile.userId;
+            
+            debugLog('取得用戶資料', {
+                userId: userId,
+                displayName: userProfile.displayName
+            });
+            
+            displayUserInfo();
+            await testApiConnection();
+            await checkUserRegistration();
+        } else {
+            debugLog('用戶未登入，導向登入頁面');
+            liff.login();
+        }
+    } catch (error) {
+        debugLog('LIFF初始化失敗', error);
+        handleError(error, 'LIFF初始化');
+    }
+}
 
-  async function collectLiffEnvironmentInfo() {
-      try {
-          liffEnvironment = {
-              version: liff.getVersion(),
-              language: liff.getLanguage(),
-              isInClient: liff.isInClient(),
-              isLoggedIn: liff.isLoggedIn(),
-              os: liff.getOS(),
-              lineVersion: liff.getLineVersion()
-          };
+async function collectLiffEnvironmentInfo() {
+    try {
+        liffEnvironment = {
+            version: liff.getVersion(),
+            language: liff.getLanguage(),
+            isInClient: liff.isInClient(),
+            isLoggedIn: liff.isLoggedIn(),
+            os: liff.getOS(),
+            lineVersion: liff.getLineVersion()
+        };
 
-          liffContext = liff.getContext();
-          
-          debugLog('LIFF 環境資訊', liffEnvironment);
-          debugLog('LIFF 上下文', liffContext);
-          
-      } catch (error) {
-          debugLog('收集 LIFF 環境資訊失敗', error);
-          console.error('收集 LIFF 環境資訊失敗:', error);
-      }
-  }
+        liffContext = liff.getContext();
+        
+        debugLog('LIFF 環境資訊', liffEnvironment);
+        debugLog('LIFF 上下文', liffContext);
+        
+    } catch (error) {
+        debugLog('收集 LIFF 環境資訊失敗', error);
+        handleError(error, '收集 LIFF 環境資訊');
+    }
+}
 
-  async function testApiConnection() {
-      try {
-          debugLog('測試 API 連線');
-          
-          const testResult = await callAPIWithRetry('test', { test: true });
-          
-          if (testResult && testResult.success !== false) {
-              debugLog('API 連線測試成功', testResult);
-              apiConnected = true;
-          } else {
-              debugLog('API 連線測試失敗', testResult);
-              apiConnected = false;
-              UIManager.showToast('API 連線異常，部分功能可能無法使用', 'warning', 5000);
-          }
-      } catch (error) {
-          debugLog('API 連線測試失敗', error);
-          apiConnected = false;
-          UIManager.showToast('無法連接到伺服器，請檢查網路連線', 'error', 5000);
-      }
-  }
+async function testApiConnection() {
+    try {
+        debugLog('測試 API 連線');
+        
+        const testResult = await callAPIWithRetry('test', { test: true });
+        
+        if (testResult && testResult.success !== false) {
+            debugLog('API 連線測試成功', testResult);
+            apiConnected = true;
+        } else {
+            debugLog('API 連線測試失敗', testResult);
+            apiConnected = false;
+            UIManager.showToast('API 連線異常，部分功能可能無法使用', 'warning', 5000);
+        }
+    } catch (error) {
+        debugLog('API 連線測試失敗', error);
+        apiConnected = false;
+        UIManager.showToast('無法連接到伺服器，請檢查網路連線', 'error', 5000);
+    }
+}
 
-  function displayUserInfo() {
-      if (!userProfile) return;
-      
-      const userInfoDiv = document.getElementById('userInfo');
-      const userDetailsDiv = document.getElementById('userDetails');
-      const userAvatar = document.getElementById('userAvatar');
-      
-      if (!userInfoDiv || !userDetailsDiv) return;
+function displayUserInfo() {
+    if (!userProfile) return;
+    
+    const userInfoDiv = document.getElementById('userInfo');
+    const userDetailsDiv = document.getElementById('userDetails');
+    const userAvatar = document.getElementById('userAvatar');
+    
+    if (!userInfoDiv || !userDetailsDiv) return;
 
-      if (userProfile.pictureUrl && userAvatar) {
-          userAvatar.src = userProfile.pictureUrl;
-          userAvatar.style.display = 'block';
-          userAvatar.onerror = function() {
-              this.style.display = 'none';
-          };
-      }
+    if (userProfile.pictureUrl && userAvatar) {
+        userAvatar.src = userProfile.pictureUrl;
+        userAvatar.style.display = 'block';
+        userAvatar.onerror = function() {
+            this.style.display = 'none';
+        };
+    }
 
-      let html = `
-          <div class="info-item">
-              <span class="info-label">LINE 名稱:</span>
-              <span class="info-value">${userProfile.displayName}</span>
-          </div>
-      `;
+    let html = `
+        <div class="info-item">
+            <span class="info-label">LINE 名稱:</span>
+            <span class="info-value">${userProfile.displayName}</span>
+        </div>
+    `;
 
-      if (userProfile.statusMessage) {
-          html += `
-              <div class="info-item">
-                  <span class="info-label">狀態訊息:</span>
-                  <span class="info-value">${userProfile.statusMessage}</span>
-              </div>
-          `;
-      }
+    if (userProfile.statusMessage) {
+        html += `
+            <div class="info-item">
+                <span class="info-label">狀態訊息:</span>
+                <span class="info-value">${userProfile.statusMessage}</span>
+            </div>
+        `;
+    }
 
-      if (userRegistrationData && userRegistrationData.realName) {
-          html += `
-              <div class="info-item">
-                  <span class="info-label">真實姓名:</span>
-                  <span class="info-value">${userRegistrationData.realName}</span>
-              </div>
-          `;
-      }
+    if (userRegistrationData && userRegistrationData.realName) {
+        html += `
+            <div class="info-item">
+                <span class="info-label">真實姓名:</span>
+                <span class="info-value">${userRegistrationData.realName}</span>
+            </div>
+        `;
+    }
 
-      if (userRegistrationData && userRegistrationData.phone) {
-          html += `
-              <div class="info-item">
-                  <span class="info-label">聯絡電話:</span>
-                  <span class="info-value">${userRegistrationData.phone}</span>
-              </div>
-          `;
-      }
+    if (userRegistrationData && userRegistrationData.phone) {
+        html += `
+            <div class="info-item">
+                <span class="info-label">聯絡電話:</span>
+                <span class="info-value">${userRegistrationData.phone}</span>
+            </div>
+        `;
+    }
 
-      if (userRegistrationData && userRegistrationData.registeredAt) {
-          const regDate = new Date(userRegistrationData.registeredAt);
-          html += `
-              <div class="info-item">
-                  <span class="info-label">註冊時間:</span>
-                  <span class="info-value">${regDate.toLocaleString('zh-TW')}</span>
-              </div>
-          `;
-      }
+    if (userRegistrationData && userRegistrationData.registeredAt) {
+        const regDate = new Date(userRegistrationData.registeredAt);
+        html += `
+            <div class="info-item">
+                <span class="info-label">註冊時間:</span>
+                <span class="info-value">${regDate.toLocaleString('zh-TW')}</span>
+            </div>
+        `;
+    }
 
-      userDetailsDiv.innerHTML = html;
-      userInfoDiv.style.display = 'block';
-  }
+    userDetailsDiv.innerHTML = html;
+    userInfoDiv.style.display = 'block';
+}
 
-  async function checkUserRegistration() {
-      try {
-          debugLog('檢查用戶註冊狀態');
-          
-          // 先檢查快取
-          const cacheKey = `registration_${userId}`;
-          const cachedData = CacheManager.get(cacheKey);
-          
-          if (cachedData && isOnline) {
-              debugLog('使用快取的註冊資料', cachedData);
-              handleRegistrationResult(cachedData);
-              return;
-          }
-          
-          const result = await callAPIWithRetry('check-registration', {
-              userId: userId,
-              lineDisplayName: userProfile.displayName,
-              liffContext: liffContext,
-              liffEnvironment: liffEnvironment,
-              timestamp: new Date().toISOString()
-          });
-          
-          if (result) {
-              // 快取結果
-              CacheManager.set(cacheKey, result);
-              handleRegistrationResult(result);
-          }
-          
-      } catch (error) {
-          debugLog('檢查註冊狀態失敗', error);
-          
-          // 如果有快取資料，使用快取
-          const cacheKey = `registration_${userId}`;
-          const cachedData = CacheManager.get(cacheKey);
-          if (cachedData) {
-              debugLog('網路錯誤，使用快取資料', cachedData);
-              handleRegistrationResult(cachedData);
-              UIManager.showToast('使用快取資料，可能不是最新狀態', 'info');
-              return;
-          }
-          
-          console.error('檢查註冊狀態失敗:', error);
-          showError('檢查註冊狀態失敗: ' + error.message);
-      }
-  }
+async function checkUserRegistration() {
+    try {
+        debugLog('檢查用戶註冊狀態');
+        
+        // 先檢查快取
+        const cacheKey = `registration_${userId}`;
+        const cachedData = CacheManager.get(cacheKey);
+        
+        if (cachedData && isOnline) {
+            debugLog('使用快取的註冊資料', cachedData);
+            handleRegistrationResult(cachedData);
+            return;
+        }
+        
+        const result = await callAPIWithRetry('check-registration', {
+            userId: userId,
+            lineDisplayName: userProfile.displayName,
+            liffContext: liffContext,
+            liffEnvironment: liffEnvironment,
+            timestamp: new Date().toISOString()
+        });
+        
+        if (result) {
+            // 快取結果
+            CacheManager.set(cacheKey, result);
+            handleRegistrationResult(result);
+        }
+        
+    } catch (error) {
+        debugLog('檢查註冊狀態失敗', error);
+        
+        // 如果有快取資料，使用快取
+        const cacheKey = `registration_${userId}`;
+        const cachedData = CacheManager.get(cacheKey);
+        if (cachedData) {
+            debugLog('網路錯誤，使用快取資料', cachedData);
+            handleRegistrationResult(cachedData);
+            UIManager.showToast('使用快取資料，可能不是最新狀態', 'info');
+            return;
+        }
+        
+        handleError(error, '檢查註冊狀態');
+    }
+}
 
-  function handleRegistrationResult(result) {
-      if (result && result.success && result.registered) {
-          debugLog('用戶已註冊', result.userInfo);
-          isRegistered = true;
-          userRegistrationData = result.userInfo;
-          
-          showRegisteredStatus();
-          enableAllTabs();
-          displayUserInfo();
-          
-          UIManager.showToast('歡迎回來，' + result.userInfo.realName, 'success');
-      } else {
-          debugLog('用戶未註冊');
-          isRegistered = false;
-          showRegistrationForm();
-      }
-  }
+function handleRegistrationResult(result) {
+    if (result && result.success && result.registered) {
+        debugLog('用戶已註冊', result.userInfo);
+        isRegistered = true;
+        userRegistrationData = result.userInfo;
+        
+        showRegisteredStatus();
+        enableAllTabs();
+        displayUserInfo();
+        
+        UIManager.showToast('歡迎回來，' + result.userInfo.realName, 'success');
+    } else {
+        debugLog('用戶未註冊');
+        isRegistered = false;
+        showRegistrationForm();
+    }
+}
 
-  function showRegistrationForm() {
-      document.getElementById('registerForm').style.display = 'block';
-      document.getElementById('registeredStatus').style.display = 'none';
-  }
+function showRegistrationForm() {
+    document.getElementById('registerForm').style.display = 'block';
+    document.getElementById('registeredStatus').style.display = 'none';
+}
 
-  function showRegisteredStatus() {
-      document.getElementById('registerForm').style.display = 'none';
-      document.getElementById('registeredStatus').style.display = 'block';
-  }
+function showRegisteredStatus() {
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('registeredStatus').style.display = 'block';
+}
 
-  function enableAllTabs() {
-      const tabs = ['ordersTab', 'paymentTab', 'statusTab'];
-      tabs.forEach(tabId => {
-          const tab = document.getElementById(tabId);
-          if (tab) {
-              tab.disabled = false;
-          }
-      });
-  }
+function enableAllTabs() {
+    const tabs = ['ordersTab', 'paymentTab', 'statusTab'];
+    tabs.forEach(tabId => {
+        const tab = document.getElementById(tabId);
+        if (tab) {
+            tab.disabled = false;
+        }
+    });
+}
 
-  // API 呼叫函數（帶重試機制）
-  async function callAPIWithRetry(action, data, maxRetries = CONFIG.MAX_RETRY_COUNT) {
-      let lastError;
-      
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-              debugLog(`API 呼叫嘗試 ${attempt}/${maxRetries}: ${action}`);
-              
-              const result = await callAPI(action, data);
-              
-              if (result && result.success !== false) {
-                  return result;
-              } else {
-                  throw new Error(result?.message || 'API 回應錯誤');
-              }
-          } catch (error) {
-              lastError = error;
-              debugLog(`API 呼叫失敗 (嘗試 ${attempt}/${maxRetries}):`, error);
-              
-              if (attempt < maxRetries) {
-                  const delay = CONFIG.RETRY_DELAY * Math.pow(2, attempt - 1);
-                  await new Promise(resolve => setTimeout(resolve, delay));
-              }
-          }
-      }
-      
-      throw lastError;
-  }
+// API 呼叫函數（帶重試機制）
+async function callAPIWithRetry(action, data, maxRetries = CONFIG.MAX_RETRY_COUNT) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            debugLog(`API 呼叫嘗試 ${attempt}/${maxRetries}: ${action}`);
+            
+            const result = await callAPI(action, data);
+            
+            if (result && result.success !== false) {
+                return result;
+            } else {
+                throw new Error(result?.message || 'API 回應錯誤');
+            }
+        } catch (error) {
+            lastError = error;
+            debugLog(`API 呼叫失敗 (嘗試 ${attempt}/${maxRetries}):`, error);
+            
+            if (attempt < maxRetries) {
+                const delay = CONFIG.RETRY_DELAY * Math.pow(2, attempt - 1);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
+    
+    throw lastError;
+}
 
-  // 基本 API 呼叫函數
-  function callAPI(action, data) {
-      return new Promise((resolve, reject) => {
-          const requestData = {
-              action: action,
-              data: JSON.stringify(data),
-              callback: 'handleAPIResponse_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-          };
-          
-          debugLog('API 請求', { action, data, callback: requestData.callback });
-          
-          // 建立 JSONP 回調函數
-          window[requestData.callback] = function(response) {
-              debugLog('API 回應', response);
-              delete window[requestData.callback];
-              resolve(response);
-          };
-          
-          // 建立 script 標籤
-          const script = document.createElement('script');
-          const params = new URLSearchParams(requestData);
-          script.src = CONFIG.API_BASE_URL + '?' + params.toString();
-          
-          // 設定超時處理
-          const timeout = setTimeout(() => {
-              delete window[requestData.callback];
-              if (script.parentNode) {
-                  document.head.removeChild(script);
-              }
-              reject(new Error('API 請求超時'));
-          }, 30000);
-          
-          script.onload = function() {
-              clearTimeout(timeout);
-              if (script.parentNode) {
-                  document.head.removeChild(script);
-              }
-          };
-          
-          script.onerror = function() {
-              clearTimeout(timeout);
-              delete window[requestData.callback];
-              if (script.parentNode) {
-                  document.head.removeChild(script);
-              }
-              reject(new Error('API 請求失敗'));
-          };
-          
-          document.head.appendChild(script);
-      });
-  }
+// 基本 API 呼叫函數 - 修正版本
+function callAPI(action, data) {
+    return new Promise((resolve, reject) => {
+        const callbackName = 'handleAPIResponse_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        
+        debugLog('API 請求', { action, data, callback: callbackName });
+        
+        // 建立 JSONP 回調函數
+        window[callbackName] = function(response) {
+            debugLog('API 回應', response);
+            cleanup();
+            resolve(response);
+        };
+        
+        // 清理函數
+        function cleanup() {
+            if (window[callbackName]) {
+                delete window[callbackName];
+            }
+            if (script && script.parentNode) {
+                document.head.removeChild(script);
+            }
+            if (timeout) {
+                clearTimeout(timeout);
+            }
+        }
+        
+        // 建立 script 標籤
+        const script = document.createElement('script');
+        const params = new URLSearchParams({
+            action: action,
+            data: JSON.stringify(data),
+            callback: callbackName
+        });
+        
+        script.src = CONFIG.API_BASE_URL + '?' + params.toString();
+        
+        // 設定超時處理
+        const timeout = setTimeout(() => {
+            cleanup();
+            reject(new Error('API 請求超時'));
+        }, 30000);
+        
+        script.onload = function() {
+            // 成功載入，但回調函數可能還沒執行
+            // 清理會在回調函數中進行
+        };
+        
+        script.onerror = function() {
+            cleanup();
+            reject(new Error('API 請求失敗'));
+        };
+        
+        document.head.appendChild(script);
+    });
+}
 
-  // 標籤頁切換
-  function switchTab(tabName, event) {
-      if (event) {
-          event.preventDefault();
-      }
-      
-      debugLog('切換標籤頁', tabName);
-      
-      // 檢查是否需要註冊
-      if (!isRegistered && ['orders', 'payment', 'status'].includes(tabName)) {
-          UIManager.showToast('請先完成實名制登記', 'warning');
-          return;
-      }
-      
-      // 隱藏所有標籤內容
-      const tabContents = document.querySelectorAll('.tab-content');
-      tabContents.forEach(content => {
-          content.classList.remove('active');
-      });
-      
-      // 移除所有按鈕的 active 狀態
-      const tabButtons = document.querySelectorAll('.tab-button');
-      tabButtons.forEach(button => {
-          button.classList.remove('active');
-      });
-      
-      // 顯示選中的標籤內容
-      const selectedTab = document.getElementById(tabName);
-      if (selectedTab) {
-          selectedTab.classList.add('active');
-      }
-      
-      // 設定對應按鈕為 active
-      if (event && event.target) {
-          event.target.classList.add('active');
-      }
-      
-      // 載入對應內容
-      loadTabContent(tabName);
-  }
+// 標籤頁切換
+function switchTab(tabName, event) {
+    if (event) {
+        event.preventDefault();
+    }
+    
+    debugLog('切換標籤頁', tabName);
+    
+    // 檢查是否需要註冊
+    if (!isRegistered && ['orders', 'payment', 'status'].includes(tabName)) {
+        UIManager.showToast('請先完成實名制登記', 'warning');
+        return;
+    }
+    
+    // 隱藏所有標籤內容
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // 移除所有按鈕的 active 狀態
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // 顯示選中的標籤內容
+    const selectedTab = document.getElementById(tabName);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // 設定對應按鈕為 active
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
+    
+    // 載入對應內容
+    loadTabContent(tabName);
+}
 
-  async function loadTabContent(tabName) {
-      switch (tabName) {
-          case 'orders':
-              await loadOrdersContent();
-              break;
-          case 'payment':
-              await loadPaymentContent();
-              break;
-          case 'status':
-              await loadStatusContent();
-              break;
-      }
-  }
+async function loadTabContent(tabName) {
+    switch (tabName) {
+        case 'orders':
+            await loadOrdersContent();
+            break;
+        case 'payment':
+            await loadPaymentContent();
+            break;
+        case 'status':
+            await loadStatusContent();
+            break;
+    }
+}
 
-  async function loadOrdersContent() {
-      if (!isRegistered || !userRegistrationData) return;
-      
-      const contentDiv = document.getElementById('ordersContent');
-      UIManager.showLoading('ordersContent', '載入訂單資料中...');
-      
-      try {
-          // 檢查快取
-          const cacheKey = `orders_${userId}`;
-          const cachedData = CacheManager.get(cacheKey);
-          
-          if (cachedData && !isOnline) {
-              debugLog('使用快取的訂單資料', cachedData);
-              displayOrderData(cachedData, true);
-              return;
-          }
-          
-          const result = await callAPIWithRetry('get-orders', {
-              userId: userId,
-              lineName: userProfile.displayName,
-              realName: userRegistrationData.realName
-          });
-          
-          if (result && result.success) {
-              // 快取結果
-              CacheManager.set(cacheKey, result);
-              displayOrderData(result, false);
-          } else {
-              throw new Error(result?.message || '載入訂單失敗');
-          }
-          
-      } catch (error) {
-          debugLog('載入訂單失敗', error);
-          
-          // 嘗試使用快取
-          const cacheKey = `orders_${userId}`;
-          const cachedData = CacheManager.get(cacheKey);
-          if (cachedData) {
-              debugLog('網路錯誤，使用快取訂單資料', cachedData);
-              displayOrderData(cachedData, true);
-              UIManager.showToast('使用快取資料，可能不是最新狀態', 'info');
-              return;
-          }
-          
-          contentDiv.innerHTML = `
-              <div class="error">
-                  <h3>❌ 載入失敗</h3>
-                  <p>${error.message}</p>
-                  <button class="btn" onclick="loadOrdersContent()" style="margin-top: 15px;">
-                      重新載入
-                  </button>
-              </div>
-          `;
-      }
-  }
+async function loadOrdersContent() {
+    if (!isRegistered || !userRegistrationData) return;
+    
+    const contentDiv = document.getElementById('ordersContent');
+    UIManager.showLoading('ordersContent', '載入訂單資料中...');
+    
+    try {
+        // 檢查快取
+        const cacheKey = `orders_${userId}`;
+        const cachedData = CacheManager.get(cacheKey);
+        
+        if (cachedData && !isOnline) {
+            debugLog('使用快取的訂單資料', cachedData);
+            displayOrderData(cachedData, true);
+            return;
+        }
+        
+        const result = await callAPIWithRetry('get-orders', {
+            userId: userId,
+            lineName: userProfile.displayName,
+            realName: userRegistrationData.realName
+        });
+        
+        if (result && result.success) {
+            // 快取結果
+            CacheManager.set(cacheKey, result);
+            displayOrderData(result, false);
+        } else {
+            throw new Error(result?.message || '載入訂單失敗');
+        }
+        
+    } catch (error) {
+        debugLog('載入訂單失敗', error);
+        
+        // 嘗試使用快取
+        const cacheKey = `orders_${userId}`;
+        const cachedData = CacheManager.get(cacheKey);
+        if (cachedData) {
+            debugLog('網路錯誤，使用快取訂單資料', cachedData);
+            displayOrderData(cachedData, true);
+            UIManager.showToast('使用快取資料，可能不是最新狀態', 'info');
+            return;
+        }
+        
+        contentDiv.innerHTML = `
+            <div class="error">
+                <h3>❌ 載入失敗</h3>
+                <p>${error.message}</p>
+                <button class="btn" onclick="loadOrdersContent()" style="margin-top: 15px;">
+                    重新載入
+                </button>
+            </div>
+        `;
+    }
+}
 
-  function displayOrderData(result, isFromCache) {
-      const contentDiv = document.getElementById('ordersContent');
-      
-      if (result.orderSummary) {
-          currentOrderSummary = result.orderSummary;
-          displayOrderSummary(result.orderSummary);
-          
-          if (isFromCache) {
-              UIManager.showCacheInfo('ordersContent', result.timestamp || Date.now());
-          }
-      } else {
-          contentDiv.innerHTML = `
-              <div class="info">
-                  <h3>📋 訂單查詢結果</h3>
-                  <p>${result.message || '目前沒有訂購記錄'}</p>
-              </div>
-          `;
-      }
-  }
+function displayOrderData(result, isFromCache) {
+    const contentDiv = document.getElementById('ordersContent');
+    
+    if (result.orderSummary) {
+        currentOrderSummary = result.orderSummary;
+        displayOrderSummary(result.orderSummary);
+        
+        if (isFromCache) {
+            UIManager.showCacheInfo('ordersContent', result.timestamp || Date.now());
+        }
+    } else {
+        contentDiv.innerHTML = `
+            <div class="info">
+                <h3>📋 訂單查詢結果</h3>
+                <p>${result.message || '目前沒有訂購記錄'}</p>
+            </div>
+        `;
+    }
+}
 
-  function displayOrderSummary(orderSummary) {
-      const contentDiv = document.getElementById('ordersContent');
-      
-      let html = `
-          <div class="order-summary">
-              <h3>📋 訂單摘要</h3>
-              <div class="summary-item">
-                  <span>訂單編號:</span>
-                  <span>${orderSummary.orderId}</span>
-              </div>
-              <div class="summary-item">
-                  <span>LINE 名稱:</span>
-                  <span>${orderSummary.lineName}</span>
-              </div>
-              <div class="summary-item">
-                  <span>真實姓名:</span>
-                  <span>${orderSummary.realName}</span>
-              </div>
-              <div class="summary-item">
-                  <span>商品種類:</span>
-                  <span>${orderSummary.productCount} 種</span>
-              </div>
-              <div class="summary-item">
-                  <span>總數量:</span>
-                  <span>${orderSummary.totalQuantity} 件</span>
-              </div>
-              <div class="summary-item">
-                  <span>訂單總額:</span>
-                  <span>NT$ ${orderSummary.totalAmount.toLocaleString()}</span>
-              </div>
-          </div>
-      `;
-      
-      if (orderSummary.products && orderSummary.products.length > 0) {
-          html += `
-              <div class="product-list">
-                  <h4>📦 商品明細</h4>
-          `;
-          
-          orderSummary.products.forEach(product => {
-              html += `
-                  <div class="product-item">
-                      <div class="product-info">
-                          <div class="product-name">${product.productName}</div>
-                          <div class="product-code">${product.productCode}</div>
-                      </div>
-                      <div class="product-details">
-                          <div>數量: ${product.quantity}</div>
-                          <div>單價: NT$ ${product.unitPrice.toLocaleString()}</div>
-                          <div class="product-price">小計: NT$ ${product.totalPrice.toLocaleString()}</div>
-                      </div>
-                  </div>
-              `;
-          });
-          
-          html += `</div>`;
-      }
-      
-      html += `
-          <div class="btn-group">
-              <button class="btn" onclick="switchTab('payment', event)">
-                  💰 前往繳費回報
-              </button>
-              <button class="btn secondary" onclick="loadOrdersContent()">
-                  🔄 重新整理
-              </button>
-          </div>
-      `;
-      
-      contentDiv.innerHTML = html;
-  }
+function displayOrderSummary(orderSummary) {
+    const contentDiv = document.getElementById('ordersContent');
+    
+    let html = `
+        <div class="order-summary">
+            <h3>📋 訂單摘要</h3>
+            <div class="summary-item">
+                <span>訂單編號:</span>
+                <span>${orderSummary.orderId}</span>
+            </div>
+            <div class="summary-item">
+                <span>LINE 名稱:</span>
+                <span>${orderSummary.lineName}</span>
+            </div>
+            <div class="summary-item">
+                <span>真實姓名:</span>
+                <span>${orderSummary.realName}</span>
+            </div>
+            <div class="summary-item">
+                <span>商品種類:</span>
+                <span>${orderSummary.productCount} 種</span>
+            </div>
+            <div class="summary-item">
+                <span>總數量:</span>
+                <span>${orderSummary.totalQuantity} 件</span>
+            </div>
+            <div class="summary-item">
+                <span>訂單總額:</span>
+                <span>NT$ ${orderSummary.totalAmount.toLocaleString()}</span>
+            </div>
+        </div>
+    `;
+    
+    if (orderSummary.products && orderSummary.products.length > 0) {
+        html += `
+            <div class="product-list">
+                <h4>📦 商品明細</h4>
+        `;
+        
+        orderSummary.products.forEach(product => {
+            html += `
+                <div class="product-item">
+                    <div class="product-info">
+                        <div class="product-name">${product.productName}</div>
+                        <div class="product-code">${product.productCode}</div>
+                    </div>
+                    <div class="product-details">
+                        <div>數量: ${product.quantity}</div>
+                        <div>單價: NT$ ${product.unitPrice.toLocaleString()}</div>
+                        <div class="product-price">小計: NT$ ${product.totalPrice.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+    }
+    
+    html += `
+        <div class="btn-group">
+            <button class="btn" onclick="switchTab('payment', event)">
+                💰 前往繳費回報
+            </button>
+            <button class="btn secondary" onclick="loadOrdersContent()">
+                🔄 重新整理
+            </button>
+        </div>
+    `;
+    
+    contentDiv.innerHTML = html;
+}
 
-  async function loadPaymentContent() {
-      if (!isRegistered || !userRegistrationData) return;
-      
-      const contentDiv = document.getElementById('paymentContent');
-      
-      if (!currentOrderSummary) {
-          contentDiv.innerHTML = `
-              <div class="warning">
-                  <h3>⚠️ 請先查詢訂單</h3>
-                  <p>請先到「我的訂單」頁面查詢訂單資訊，再進行繳費回報。</p>
-                  <button class="btn" onclick="switchTab('orders', event)" style="margin-top: 15px;">
-                      前往查詢訂單
-                  </button>
-              </div>
-          `;
-          return;
-      }
-      
-      displayPaymentForm();
-  }
+async function loadPaymentContent() {
+    if (!isRegistered || !userRegistrationData) return;
+    
+    const contentDiv = document.getElementById('paymentContent');
+    
+    if (!currentOrderSummary) {
+        contentDiv.innerHTML = `
+            <div class="warning">
+                <h3>⚠️ 請先查詢訂單</h3>
+                <p>請先到「我的訂單」頁面查詢訂單資訊，再進行繳費回報。</p>
+                <button class="btn" onclick="switchTab('orders', event)" style="margin-top: 15px;">
+                    前往查詢訂單
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    displayPaymentForm();
+}
 
-  function displayPaymentForm() {
-      const contentDiv = document.getElementById('paymentContent');
-      
-      const html = `
-          <div class="order-summary">
-              <h3>💰 繳費資訊</h3>
-              <div class="summary-item">
-                  <span>訂單編號:</span>
-                  <span>${currentOrderSummary.orderId}</span>
-              </div>
-              <div class="summary-item">
-                  <span>應繳金額:</span>
-                  <span>NT$ ${currentOrderSummary.totalAmount.toLocaleString()}</span>
-              </div>
-          </div>
-          
-          <h2 style="margin: 25px 0 20px 0; color: #333;">📝 繳費證明提交</h2>
-          
-          <form id="paymentForm">
-              <div class="form-group">
-                  <label for="paymentAmount">繳費金額 *</label>
+function displayPaymentForm() {
+    const contentDiv = document.getElementById('paymentContent');
+    
+    const html = `
+        <div class="order-summary">
+            <h3>💰 繳費資訊</h3>
+            <div class="summary-item">
+                <span>訂單編號:</span>
+                <span>${currentOrderSummary.orderId}</span>
+            </div>
+            <div class="summary-item">
+                <span>應繳金額:</span>
+                <span>NT$ ${currentOrderSummary.totalAmount.toLocaleString()}</span>
+            </div>
+        </div>
+        
+        <h2 style="margin: 25px 0 20px 0; color: #333;">📝 繳費證明提交</h2>
+        
+        <form id="paymentForm">
+            <div class="form-group">
+                <label for="paymentAmount">繳費金額 *</label>
                   <input type="number" id="paymentAmount" name="paymentAmount" 
                          value="${currentOrderSummary.totalAmount}" required 
                          min="1" step="1" placeholder="請輸入繳費金額">
@@ -1711,7 +1764,6 @@
                       <option value="銀行轉帳">銀行轉帳</option>
                       <option value="現金">現金</option>
                       <option value="LINE Pay">LINE Pay</option>
-                      <option value="信用卡">信用卡</option>
                       <option value="其他">其他</option>
                   </select>
               </div>
@@ -2049,13 +2101,6 @@
   }
 
   // 註冊表單提交處理
-  document.addEventListener('DOMContentLoaded', function() {
-      const nameForm = document.getElementById('nameForm');
-      if (nameForm) {
-          nameForm.addEventListener('submit', handleRegistration);
-      }
-  });
-
   async function handleRegistration(e) {
       e.preventDefault();
       
@@ -2145,13 +2190,37 @@
       debugLog('頁面即將關閉');
   });
 
+  // 全域錯誤處理
+  window.addEventListener('error', function(event) {
+      console.error('全域錯誤:', event.error);
+      handleError(event.error, 'window.error');
+  });
+
+  window.addEventListener('unhandledrejection', function(event) {
+      console.error('未處理的 Promise 錯誤:', event.reason);
+      event.preventDefault();
+      handleError(event.reason, 'unhandledrejection');
+  });
+
+  // DOM 載入完成後初始化
+  document.addEventListener('DOMContentLoaded', function() {
+      // 綁定註冊表單
+      const nameForm = document.getElementById('nameForm');
+      if (nameForm) {
+          nameForm.addEventListener('submit', handleRegistration);
+      }
+      
+      // 延遲初始化，確保 LIFF SDK 完全載入
+      setTimeout(initializeApp, 100);
+  });
+
   // 開發用測試函數
   function testAllFunctions() {
       if (!CONFIG.DEBUG_MODE) return;
       
       console.log('=== 系統狀態測試 ===');
-      console.log('LIFF 初始化:', liff.isReady());
-      console.log('用戶登入:', liff.isLoggedIn());
+      console.log('LIFF 初始化:', typeof liff !== 'undefined' && liff.isReady());
+      console.log('用戶登入:', typeof liff !== 'undefined' && liff.isLoggedIn());
       console.log('用戶資料:', userProfile);
       console.log('註冊狀態:', isRegistered);
       console.log('API 連線:', apiConnected);
