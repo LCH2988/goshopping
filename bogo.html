@@ -327,21 +327,6 @@
           border-left-color: #ffc107;
       }
 
-      .alert .close-btn {
-          position: absolute;
-          top: 10px;
-          right: 15px;
-          background: none;
-          border: none;
-          font-size: 18px;
-          cursor: pointer;
-          opacity: 0.7;
-      }
-
-      .alert .close-btn:hover {
-          opacity: 1;
-      }
-
       .loading {
           text-align: center;
           padding: 40px;
@@ -410,6 +395,35 @@
 
       .hidden {
           display: none !important;
+      }
+
+      .step-indicator {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 20px;
+      }
+
+      .step {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: #e9ecef;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 5px;
+          font-size: 12px;
+          font-weight: bold;
+      }
+
+      .step.active {
+          background: #4CAF50;
+          color: white;
+      }
+
+      .step.completed {
+          background: #28a745;
+          color: white;
       }
 
       /* 管理員面板樣式 */
@@ -524,65 +538,6 @@
               padding: 8px 12px;
               font-size: 14px;
           }
-      }
-
-      /* 新增一些視覺改進 */
-      .step-indicator {
-          display: flex;
-          justify-content: center;
-          margin-bottom: 20px;
-      }
-
-      .step {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          background: #e9ecef;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 5px;
-          font-size: 12px;
-          font-weight: bold;
-      }
-
-      .step.active {
-          background: #4CAF50;
-          color: white;
-      }
-
-      .step.completed {
-          background: #28a745;
-          color: white;
-      }
-
-      .maintenance-mode {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-          background: #f5f5f5;
-      }
-
-      .maintenance-card {
-          text-align: center;
-          padding: 40px;
-          background: white;
-          border-radius: 15px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-          max-width: 400px;
-      }
-
-      .maintenance-icon {
-          font-size: 64px;
-          margin-bottom: 20px;
-          animation: bounce 2s infinite;
-      }
-
-      @keyframes bounce {
-          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-10px); }
-          60% { transform: translateY(-5px); }
       }
   </style>
 </head>
@@ -761,11 +716,12 @@
       // ==================== 全域設定 ====================
       const CONFIG = {
           LIFF_ID: '1657285806-2bmkYWkN',
-          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbxOuPoLeG5nXM_q0lHLIpvk3jGgX9GCExIeUG1uGT3tidtL7nPQ4lo9fMMZxe3KybMe/exec',
+          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbzWz2Hf-ykp16RH-0RNi18seCIhrQaqS1mWP-m4XHAxKLwMVQZ4wI3bOLyVM15ugR-Q/exec',
           DEBUG_MODE: true,
-          DEMO_MODE: false, // 設為 true 以使用示範資料 false
+          DEMO_MODE: false, // 設為 true 以使用示範資料 
           RETRY_ATTEMPTS: 3,
-          RETRY_DELAY: 1000
+          RETRY_DELAY: 1000,
+          API_TIMEOUT: 30000
       };
 
       // ==================== 全域變數 ====================
@@ -862,7 +818,7 @@
       // ==================== API 相關函數 ====================
       async function callAPI(action, data = {}) {
           try {
-              debugLog('API 呼叫', action, data);
+              debugLog('API 呼叫', { action, data });
               
               if (CONFIG.DEMO_MODE) {
                   return handleDemoResponse(action, data);
@@ -882,7 +838,7 @@
                   window[callbackName] = function(response) {
                       clearTimeout(timeout);
                       cleanup();
-                      debugLog('API 回應', action, response);
+                      debugLog('API 回應', { action, response });
                       resolve(response);
                   };
                   
@@ -921,8 +877,7 @@
           }
       }
 
-
-      function getDemoData(action, data) {
+      function handleDemoResponse(action, data) {
           debugLog(`使用示範資料: ${action}`, data);
           
           switch (action) {
@@ -941,14 +896,14 @@
                               '備註欄位顯示': true,
                               '系統維護模式': false,
                               '最大檔案大小MB': 5,
-                                '允許檔案格式': ['jpg', 'png', 'pdf']
-                            },
-                            paymentMethods: [
-                                { code: 'bank_transfer', name: '銀行轉帳', enabled: true },
-                                { code: 'cash', name: '現金繳費', enabled: true },
-                                { code: 'atm', name: 'ATM轉帳', enabled: true }
-                            ],
-                            messages: {
+                              '允許檔案格式': ['jpg', 'png', 'pdf']
+                          },
+                          paymentMethods: [
+                              { code: 'bank_transfer', name: '銀行轉帳', enabled: true },
+                              { code: 'cash', name: '現金繳費', enabled: true },
+                              { code: 'atm', name: 'ATM轉帳', enabled: true }
+                          ],
+                          messages: {
                                 welcome_message: '歡迎使用本系統！',
                                 upload_success: '繳費證明上傳成功！',
                                 upload_error: '上傳失敗，請檢查檔案格式',
@@ -1748,211 +1703,6 @@
             setupEventHandlers();
         });
 
-
-        // ==================== 示範模式回應處理 ====================
-        function handleDemoResponse(action, data) {
-            debugLog('示範模式回應', action, data);
-            
-            switch (action) {
-                case 'test':
-                    return {
-                        success: true,
-                        message: 'API 連線測試成功 (示範模式)',
-                        timestamp: new Date().toISOString(),
-                        version: '1.0.0-demo'
-                    };
-                    
-                case 'get-config':
-                    return {
-                        success: true,
-                        config: {
-                            basic: {
-                                'API連線狀態顯示': true,
-                                '除錯資訊顯示': true,
-                                'LIFF環境資訊顯示': true,
-                                '繳費證明上傳': '選填',
-                                '備註欄位顯示': true,
-                                '系統維護模式': false
-                            },
-                            paymentMethods: [
-                                { code: 'bank_transfer', name: '銀行轉帳', enabled: true },
-                                { code: 'atm', name: 'ATM轉帳', enabled: true },
-                                { code: 'cash', name: '現金繳費', enabled: true }
-                            ],
-                            messages: {
-                                welcome_message: '歡迎使用實名制登記與繳費系統！(示範模式)',
-                                upload_success: '繳費證明上傳成功！',
-                                upload_error: '上傳失敗，請檢查檔案格式和大小',
-                                registration_success: '實名制登記完成！',
-                                payment_success: '繳費證明提交成功，請等待審核',
-                                system_maintenance: '系統維護中，請稍後再試'
-                            }
-                        }
-                    };
-                    
-                case 'check-registration':
-                    // 模擬已登記用戶
-                    if (data.lineName && data.lineName.includes('示範')) {
-                        return {
-                            success: true,
-                            registered: true,
-                            userData: {
-                                lineName: data.lineName,
-                                realName: '示範用戶',
-                                idNumber: 'A123456789',
-                                phoneNumber: '0912345678',
-                                registrationTime: new Date().toISOString(),
-                                status: '已登記'
-                            }
-                        };
-                    } else {
-                        return {
-                            success: true,
-                            registered: false
-                        };
-                    }
-                    
-                case 'register':
-                    return {
-                        success: true,
-                        message: '實名制登記完成 (示範模式)',
-                        userData: {
-                            lineName: data.lineName,
-                            realName: data.realName,
-                            idNumber: data.idNumber,
-                            phoneNumber: data.phoneNumber,
-                            registrationTime: new Date().toISOString(),
-                            status: '已登記'
-                        }
-                    };
-                    
-                case 'orders':
-                    return {
-                        success: true,
-                        orders: [
-                            {
-                                orderId: 'DEMO001',
-                                lineName: data.lineName,
-                                realName: '示範用戶',
-                                productName: '示範商品A',
-                                quantity: 2,
-                                unitPrice: 500,
-                                totalPrice: 1000,
-                                status: '待付款',
-                                createdAt: new Date().toISOString(),
-                                note: '示範訂單'
-                            },
-                            {
-                                orderId: 'DEMO002',
-                                lineName: data.lineName,
-                                realName: '示範用戶',
-                                productName: '示範商品B',
-                                quantity: 1,
-                                unitPrice: 800,
-                                totalPrice: 800,
-                                status: '待付款',
-                                createdAt: new Date().toISOString(),
-                                note: '示範訂單'
-                            }
-                        ],
-                        totalAmount: 1800,
-                        userData: {
-                            lineName: data.lineName,
-                            realName: '示範用戶',
-                            idNumber: 'A123456789',
-                            phoneNumber: '0912345678',
-                            registrationTime: new Date().toISOString(),
-                            status: '已登記'
-                        }
-                    };
-                    
-                case 'submit-payment':
-                    return {
-                        success: true,
-                        message: '繳費證明提交成功，請等待審核 (示範模式)'
-                    };
-                    
-                case 'check-admin':
-                    return {
-                        success: true,
-                        isAdmin: data.userId === 'demo_admin',
-                        role: data.userId === 'demo_admin' ? 'admin' : 'user',
-                        adminData: data.userId === 'demo_admin' ? {
-                            userId: 'demo_admin',
-                            name: '示範管理員',
-                            role: 'admin'
-                        } : null
-                    };
-                    
-                case 'admin-dashboard':
-                    return {
-                        success: true,
-                        stats: {
-                            totalUsers: 42,
-                            totalOrders: 128,
-                            pendingPayments: 15,
-                            totalAmount: 256000
-                        }
-                    };
-                    
-                case 'admin-users':
-                    return {
-                        success: true,
-                        users: [
-                            {
-                                lineName: '示範用戶1',
-                                realName: '王小明',
-                                idNumber: 'A123456789',
-                                phoneNumber: '0912345678',
-                                registrationTime: new Date().toISOString(),
-                                status: '已登記'
-                            },
-                            {
-                                lineName: '示範用戶2',
-                                realName: '李小華',
-                                idNumber: 'B987654321',
-                                phoneNumber: '0987654321',
-                                registrationTime: new Date().toISOString(),
-                                status: '已登記'
-                            }
-                        ]
-                    };
-                    
-                case 'admin-payments':
-                    return {
-                        success: true,
-                        payments: [
-                            {
-                                paymentId: 'PAY001',
-                                orderId: 'ORDER001',
-                                lineName: '示範用戶1',
-                                realName: '王小明',
-                                paymentAmount: 1000,
-                                paymentMethod: 'bank_transfer',
-                                paymentNote: '示範繳費',
-                                status: '待審核',
-                                submittedAt: new Date().toISOString(),
-                                reviewedAt: null,
-                                reviewedBy: null,
-                                reviewNote: ''
-                            }
-                        ]
-                    };
-                    
-                case 'review-payment':
-                    return {
-                        success: true,
-                        message: '審核完成 (示範模式)'
-                    };
-                    
-                default:
-                    return {
-                        success: false,
-                        message: '未知的操作'
-                    };
-            }
-        }
-
         // ==================== 錯誤處理改進 ====================
         window.addEventListener('error', function(event) {
             debugLog('全域錯誤', {
@@ -2022,20 +1772,6 @@
             }
         }
 
-        // ==================== 在除錯模式下提供更多工具 ====================
-        if (CONFIG.DEBUG_MODE) {
-            window.debugFunctions = {
-                ...window.debugFunctions,
-                testAPIConnection,
-                testAllAPIs,
-                callAPI,
-                handleDemoResponse
-            };
-            
-            console.log('🛠️ 新增除錯工具:');
-            console.log('- testAPIConnection(): 測試 API 連線');
-            console.log('- testAllAPIs(): 測試所有 API');
-        }
         // ==================== 實用工具函數 ====================
         function formatCurrency(amount) {
             return new Intl.NumberFormat('zh-TW', {
@@ -2098,9 +1834,9 @@
                 checkRegistrationStatus,
                 loadUserOrders,
                 submitPayment,
-                systemConfig,
-                liffProfile,
-                currentOrderSummary
+                testAPIConnection,
+                testAllAPIs,
+                handleDemoResponse
             };
         }
 
@@ -2128,6 +1864,8 @@
             console.log('可用命令:');
             console.log('- testRegistration(): 填入測試登記資料');
             console.log('- testPayment(): 填入測試繳費資料');
+            console.log('- testAPIConnection(): 測試 API 連線');
+            console.log('- testAllAPIs(): 測試所有 API');
             console.log('- systemFunctions: 系統工具函數');
             console.log('- debugFunctions: 除錯函數');
             
