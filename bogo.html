@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>訂購清單查詢系統</title>
+  <title>【多福氣】BOGO個人訂購清單查詢</title>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
       * {
@@ -104,15 +104,6 @@
       .form-group input:focus, .form-group select:focus {
           outline: none;
           border-color: #00B900;
-      }
-      
-      .form-group .required {
-          color: #e74c3c;
-      }
-      
-      .form-group .optional {
-          color: #7f8c8d;
-          font-size: 12px;
       }
       
       .btn {
@@ -361,27 +352,6 @@
           text-align: right;
           color: #666;
       }
-
-      /* 新增介紹人相關樣式 */
-      .referrer-info {
-          background: #fff3e0;
-          padding: 15px;
-          border-radius: 10px;
-          margin-bottom: 15px;
-          border-left: 4px solid #ff9800;
-      }
-
-      .referrer-info h4 {
-          color: #f57c00;
-          margin-bottom: 10px;
-          font-size: 14px;
-      }
-
-      .referrer-info p {
-          font-size: 12px;
-          color: #666;
-          line-height: 1.4;
-      }
   </style>
 </head>
 <body>
@@ -416,21 +386,10 @@
                   </div>
                   
                   <h2>📝 實名制登記</h2>
-                  
-                  <div class="referrer-info">
-                      <h4>🌿 關於精油老師/介紹人</h4>
-                      <p>請填寫推薦您使用本系統的精油老師或介紹人姓名，這將有助於我們提供更好的服務與追蹤。如果是自行發現本系統，可以不填寫。</p>
-                  </div>
-                  
                   <form id="nameForm">
                       <div class="form-group">
-                          <label for="realNameInput">真實姓名 <span class="required">*</span></label>
+                          <label for="realNameInput">真實姓名 *</label>
                           <input type="text" id="realNameInput" name="realName" required placeholder="請輸入您的真實姓名">
-                      </div>
-                      
-                      <div class="form-group">
-                          <label for="referrerInput">精油老師/介紹人 <span class="optional">(選填)</span></label>
-                          <input type="text" id="referrerInput" name="referrer" placeholder="請輸入推薦您的精油老師或介紹人姓名">
                       </div>
                       
                       <button type="submit" class="btn" id="registerSubmitBtn">完成登記</button>
@@ -479,7 +438,7 @@
       // 設定區域 - 請修改為您的實際值
       const CONFIG = {
           LIFF_ID: '1657285806-2bmkYWkN', // 請替換為實際的 LIFF ID
-          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwP_4GsPS1Fw0myufq2X7fOGYOvNsihAcmVwP3h9mPIKd5t59sQwNvgBlGpqqxcCG5IMw/exec', // 請替換為 GAS 部署網址
+          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbx4IpYvra7_GTFLSKj0PdmmK0-gbKt5S0yjEYPwP3PbiwFTPkNGPVCNNSVVJMkuXK-r3Q/exec', // 請替換為 GAS 部署網址
           DEBUG_MODE: false, // 關閉除錯模式
           DEMO_MODE: false // 關閉示範模式
       };
@@ -631,19 +590,6 @@
                       <span class="info-label">真實姓名:</span>
                       <span class="info-value">${userRegistrationData.realName}</span>
                   </div>
-              `;
-              
-              // 顯示介紹人資訊（如果有）
-              if (userRegistrationData.referrer) {
-                  html += `
-                      <div class="info-item">
-                          <span class="info-label">介紹人:</span>
-                          <span class="info-value">${userRegistrationData.referrer}</span>
-                      </div>
-                  `;
-              }
-              
-              html += `
                   <div class="info-item">
                       <span class="info-label">註冊時間:</span>
                       <span class="info-value">${new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW')}</span>
@@ -848,63 +794,64 @@
           // 載入對應內容
           if (tabName === 'orders' && isRegistered) {
               loadOrders();
-          } else if (tabName === 'payment' && isRegistered)
+          } else if (tabName === 'payment' && isRegistered) {
+              loadOrderSummaryForPayment();
+          }
+      }
 
-        // 實名制登記
-        document.addEventListener('submit', async function(e) {
-            if (e.target.id === 'nameForm') {
-                e.preventDefault();
-                
-                debugLog('提交註冊表單');
-                
-                const formData = new FormData(e.target);
-                const realName = formData.get('realName').trim();
-                const referrer = formData.get('referrer').trim();
-                
-                if (!realName) {
-                    showError('請輸入真實姓名');
-                    return;
-                }
-                
-                const registerData = {
-                    userId: userId,
-                    lineDisplayName: userProfile.displayName,
-                    realName: realName,
-                    referrer: referrer, // 新增介紹人欄位
-                    registeredAt: new Date().toISOString()
-                };
-                
-                try {
-                    // 顯示載入狀態
-                    const submitBtn = document.getElementById('registerSubmitBtn');
-                    const originalText = submitBtn.textContent;
-                    submitBtn.textContent = '登記中...';
-                    submitBtn.disabled = true;
-                    
-                    const result = await callAPI('register', registerData);
-                    
-                    if (result.success) {
-                        debugLog('註冊成功');
-                        showSuccess('實名制登記完成！');
-                        isRegistered = true;
-                        userRegistrationData = registerData;
-                        showRegisteredStatus();
-                        enableAllTabs();
-                        displayUserInfo(); // 重新顯示用戶資訊
-                    } else {
-                        debugLog('註冊失敗', result);
-                        showError(result.message || '登記失敗，請稍後再試');
-                        submitBtn.textContent = originalText;
-                        submitBtn.disabled = false;
-                    }
-                } catch (error) {
-                    debugLog('註冊失敗', error);
-                    console.error('登記失敗:', error);
-                    showError('登記失敗，請稍後再試: ' + error.message);
-                    
-                    const submitBtn = document.getElementById('registerSubmitBtn');
-                    if (submitBtn) {
-                        submitBtn.textContent = '完成登記';
+      // 實名制登記
+      document.addEventListener('submit', async function(e) {
+          if (e.target.id === 'nameForm') {
+              e.preventDefault();
+              
+              debugLog('提交註冊表單');
+              
+              const formData = new FormData(e.target);
+              const realName = formData.get('realName').trim();
+              
+              if (!realName) {
+                  showError('請輸入真實姓名');
+                  return;
+              }
+              
+              const registerData = {
+                  userId: userId,
+                  lineDisplayName: userProfile.displayName,
+                  realName: realName,
+                  registeredAt: new Date().toISOString()
+              };
+              
+              try {
+                  // 顯示載入狀態
+                  const submitBtn = document.getElementById('registerSubmitBtn');
+                  const originalText = submitBtn.textContent;
+                  submitBtn.textContent = '登記中...';
+                  submitBtn.disabled = true;
+                  
+                  const result = await callAPI('register', registerData);
+                  
+                  if (result.success) {
+                      debugLog('註冊成功');
+                      showSuccess('實名制登記完成！');
+                      isRegistered = true;
+                      userRegistrationData = registerData;
+                      showRegisteredStatus();
+                      enableAllTabs();
+                      displayUserInfo(); // 重新顯示用戶資訊
+                  } else {
+                      debugLog('註冊失敗', result);
+                      showError(result.message || '登記失敗，請稍後再試');
+                      submitBtn.textContent = originalText;
+                      submitBtn.disabled = false;
+                  }
+              } catch (error) {
+                  debugLog('註冊失敗', error);
+                  console.error('登記失敗:', error);
+                  showError('登記失敗，請稍後再試: ' + error.message);
+                  
+                  const submitBtn = document.getElementById('registerSubmitBtn');
+                  if (submitBtn) {
+                      submitBtn.textContent = '完成登記';
                         submitBtn.disabled = false;
                     }
                 }
@@ -1056,7 +1003,7 @@
             document.getElementById('orderSummarySection').style.display = 'block';
         }
 
-        // 提交繳費證明
+        // 提交繳費證明（已移除上傳功能）
         async function submitPayment() {
             debugLog('提交繳費回報');
             
