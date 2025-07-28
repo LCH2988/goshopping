@@ -625,25 +625,6 @@ body {
     word-wrap: break-word;
 }
 
-.image-upload {
-    margin-top: 15px;
-}
-
-.image-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.image-preview img {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 2px solid #e9ecef;
-}
-
 .cache-info {
     font-size: 12px;
     color: #6c757d;
@@ -866,13 +847,11 @@ body {
 // 設定區域 - 請修改為您的實際值
 const CONFIG = {
     LIFF_ID: '1657285806-2bmkYWkN', // 請替換為實際的 LIFF ID
-    API_BASE_URL: 'https://script.google.com/macros/s/AKfycbwYGJwCFzJdBzKiOEAOBzBj3TMAz9UudcT3AnPsbvPgy2Xu3R7QyeILOCnySfVZTc8/exec', // 請替換為 GAS 部署網址
+    API_BASE_URL: 'https://script.google.com/macros/s/AKfycby27lpTpfGYpWoiUzzorf9IKbfeqRhFalU6VayRIU4dHFexmkF10riCDM42u2NzRQpM/exec', // 請替換為 GAS 部署網址
     DEBUG_MODE: false, // 開發時設為 true，正式環境設為 false
     MAX_RETRY_COUNT: 3,
     RETRY_DELAY: 1000,
     CACHE_EXPIRY: 5 * 60 * 1000, // 5分鐘快取
-    MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-    ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'image/gif']
 };
 
 // 全域變數
@@ -1071,77 +1050,6 @@ class FormValidator {
         }
         
         return { valid: true };
-    }
-    
-    static validateFile(file) {
-        if (!file) return { valid: true };
-        
-        if (file.size > CONFIG.MAX_FILE_SIZE) {
-            return { valid: false, message: '檔案大小不能超過5MB' };
-        }
-        
-        if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
-            return { valid: false, message: '只支援 JPG、PNG、GIF 格式' };
-        }
-        
-        return { valid: true };
-    }
-}
-
-// 檔案處理類別
-class FileHandler {
-    static async compressImage(file, maxWidth = 600, quality = 0.6) {
-        return new Promise((resolve, reject) => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            
-            img.onload = function() {
-                // 計算新尺寸
-                let { width, height } = img;
-                
-                if (width > height) {
-                    if (width > maxWidth) {
-                        height = (height * maxWidth) / width;
-                        width = maxWidth;
-                    }
-                } else {
-                    if (height > maxWidth) {
-                        width = (width * maxWidth) / height;
-                        height = maxWidth;
-                    }
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                
-                // 繪製圖片
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, width, height);
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // 轉換為 Blob
-                canvas.toBlob((blob) => {
-                    if (blob) {
-                        resolve(blob);
-                    } else {
-                        reject(new Error('圖片壓縮失敗'));
-                    }
-                }, 'image/jpeg', quality);
-            };
-            
-            img.onerror = () => reject(new Error('圖片載入失敗'));
-            img.src = URL.createObjectURL(file);
-        });
-    }
-    
-    static async fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(new Error('檔案讀取失敗'));
-            reader.readAsDataURL(file);
-        });
     }
 }
 
@@ -1816,49 +1724,14 @@ async function loadPaymentContent() {
                 <small style="color: #6c757d; font-size: 12px;">選填，最多200字</small>
             </div>
             
-            <div class="form-group">
-                <label for="paymentProof">繳費證明圖片</label>
-                <input type="file" id="paymentProof" name="paymentProof" 
-                       accept="image/*" multiple>
-                <small style="color: #6c757d; font-size: 12px;">
-                    可上傳多張圖片，支援 JPG、PNG、GIF 格式，單檔最大 5MB
-                </small>
-                <div id="imagePreview" class="image-preview"></div>
-            </div>
-            
             <button type="submit" class="btn" id="paymentSubmitBtn">
-                <span>提交繳費證明</span>
+                <span>提交繳費回報</span>
             </button>
         </form>
     `;
     
     // 綁定表單事件
     document.getElementById('paymentForm').addEventListener('submit', handlePaymentSubmit);
-    document.getElementById('paymentProof').addEventListener('change', handleImagePreview);
-}
-
-function handleImagePreview(event) {
-    const files = event.target.files;
-    const previewDiv = document.getElementById('imagePreview');
-    
-    previewDiv.innerHTML = '';
-    
-    Array.from(files).forEach((file, index) => {
-        const validation = FormValidator.validateFile(file);
-        if (!validation.valid) {
-            UIManager.showToast(`檔案 ${file.name}: ${validation.message}`, 'warning');
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            img.title = file.name;
-            previewDiv.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-    });
 }
 
 async function handlePaymentSubmit(e) {
@@ -1868,7 +1741,6 @@ async function handlePaymentSubmit(e) {
     const paymentAmount = parseFloat(formData.get('paymentAmount'));
     const paymentMethod = formData.get('paymentMethod').trim();
     const paymentNote = formData.get('paymentNote').trim();
-    const files = Array.from(document.getElementById('paymentProof').files);
     
     // 驗證
     if (!paymentAmount || paymentAmount <= 0) {
@@ -1897,59 +1769,8 @@ async function handlePaymentSubmit(e) {
         debugLog('開始處理繳費提交', {
             paymentAmount,
             paymentMethod,
-            paymentNote,
-            fileCount: files.length
+            paymentNote
         });
-        
-        // 處理圖片檔案
-        const imageData = [];
-        if (files.length > 0) {
-            submitBtn.innerHTML = '<span>處理圖片中...</span>';
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                debugLog(`處理第 ${i + 1} 個檔案`, { name: file.name, size: file.size, type: file.type });
-                
-                try {
-                    // 檔案大小檢查
-                    if (file.size > CONFIG.MAX_FILE_SIZE) {
-                        UIManager.showToast(`檔案 ${file.name} 太大，已跳過`, 'warning');
-                        continue;
-                    }
-                    
-                    // 壓縮圖片
-                    const compressedFile = await FileHandler.compressImage(file, 600, 0.6);
-                    debugLog(`檔案壓縮完成`, { 
-                        original: file.size, 
-                        compressed: compressedFile.size,
-                        reduction: ((file.size - compressedFile.size) / file.size * 100).toFixed(1) + '%'
-                    });
-                    
-                    // 轉換為 Base64
-                    const base64 = await FileHandler.fileToBase64(compressedFile);
-                    
-                    // 檢查 Base64 大小
-                    const base64Size = base64.length * 0.75;
-                    if (base64Size > 2 * 1024 * 1024) { // 2MB 限制
-                        UIManager.showToast(`圖片 ${file.name} 處理後仍太大，已跳過`, 'warning');
-                        continue;
-                    }
-                    
-                    imageData.push({
-                        name: file.name,
-                        type: compressedFile.type,
-                        size: compressedFile.size,
-                        data: base64
-                    });
-                    
-                } catch (error) {
-                    debugLog(`處理檔案 ${file.name} 失敗`, error);
-                    UIManager.showToast(`處理檔案 ${file.name} 失敗，已跳過`, 'warning');
-                }
-            }
-            
-            debugLog('圖片處理完成', { processedCount: imageData.length });
-        }
         
         submitBtn.innerHTML = '<span>提交中...</span>';
         
@@ -1962,7 +1783,6 @@ async function handlePaymentSubmit(e) {
             paymentAmount: paymentAmount,
             paymentMethod: paymentMethod,
             paymentNote: paymentNote,
-            images: imageData,
             timestamp: new Date().toISOString(),
             clientInfo: {
                 userAgent: navigator.userAgent,
@@ -1972,56 +1792,16 @@ async function handlePaymentSubmit(e) {
         };
         
         debugLog('準備提交資料', {
-            dataSize: JSON.stringify(submitData).length,
-            imageCount: imageData.length,
-            totalImageSize: imageData.reduce((sum, img) => sum + (img.data ? img.data.length : 0), 0)
+            dataSize: JSON.stringify(submitData).length
         });
         
-        // 分批提交 - 如果資料太大
-        const dataString = JSON.stringify(submitData);
-        if (dataString.length > 1024 * 1024) { // 1MB
-            debugLog('資料過大，嘗試分批提交');
-            
-            // 先提交基本資料
-            const basicData = { ...submitData };
-            delete basicData.images;
-            
-            const basicResult = await callAPIWithRetry('submit-payment', basicData);
-            
-            if (basicResult && basicResult.success && basicResult.paymentId) {
-                // 再提交圖片
-                if (imageData.length > 0) {
-                    for (let i = 0; i < imageData.length; i++) {
-                        const imageSubmitData = {
-                            action: 'upload-payment-image',
-                            paymentId: basicResult.paymentId,
-                            imageIndex: i,
-                            image: imageData[i]
-                        };
-                        
-                        try {
-                            await callAPIWithRetry('upload-payment-image', imageSubmitData);
-                        } catch (imgError) {
-                            debugLog(`上傳第 ${i + 1} 張圖片失敗`, imgError);
-                            UIManager.showToast(`第 ${i + 1} 張圖片上傳失敗`, 'warning');
-                        }
-                    }
-                }
-                
-                handleSubmitSuccess(basicResult);
-            } else {
-                throw new Error(basicResult?.message || '基本資料提交失敗');
-            }
-            
+        // 提交資料
+        const result = await callAPIWithRetry('submit-payment', submitData);
+        
+        if (result && result.success) {
+            handleSubmitSuccess(result);
         } else {
-            // 一次性提交
-            const result = await callAPIWithRetry('submit-payment', submitData);
-            
-            if (result && result.success) {
-                handleSubmitSuccess(result);
-            } else {
-                throw new Error(result?.message || '提交失敗');
-            }
+            throw new Error(result?.message || '提交失敗');
         }
         
     } catch (error) {
@@ -2031,8 +1811,6 @@ async function handlePaymentSubmit(e) {
         
         if (error.message.includes('timeout') || error.message.includes('超時')) {
             errorMessage = '網路連線超時，請稍後再試';
-        } else if (error.message.includes('too large') || error.message.includes('過大')) {
-            errorMessage = '資料過大，請減少圖片數量或大小';
         } else if (error.message.includes('network') || error.message.includes('網路')) {
             errorMessage = '網路連線問題，請檢查網路狀態';
         } else if (error.message) {
@@ -2053,7 +1831,7 @@ async function handlePaymentSubmit(e) {
 }
 
 function handleSubmitSuccess(result) {
-    UIManager.showToast('繳費證明提交成功！', 'success');
+    UIManager.showToast('繳費回報提交成功！', 'success');
     
     // 清除相關快取
     CacheManager.delete(`payment_status_${userId}`);
@@ -2062,7 +1840,7 @@ function handleSubmitSuccess(result) {
     document.getElementById('paymentContent').innerHTML = `
         <div class="success">
             <h3>✅ 提交成功</h3>
-            <p>您的繳費證明已成功提交，我們會盡快進行審核。</p>
+            <p>您的繳費回報已成功提交，我們會盡快進行審核。</p>
             <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
                 <strong>提交資訊:</strong><br>
                 繳費編號: ${result.paymentId}<br>
@@ -2345,3 +2123,5 @@ document.addEventListener('visibilitychange', function() {
 </script>
 </body>
 </html>
+
+
