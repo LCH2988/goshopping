@@ -1783,6 +1783,8 @@ async function handlePaymentSubmit(e) {
             paymentAmount: paymentAmount,
             paymentMethod: paymentMethod,
             paymentNote: paymentNote,
+            // 添加空的圖片陣列，保持與原API相容
+            images: [],
             timestamp: new Date().toISOString(),
             clientInfo: {
                 userAgent: navigator.userAgent,
@@ -1805,7 +1807,7 @@ async function handlePaymentSubmit(e) {
         }
         
     } catch (error) {
-        debugLog('提交繳費證明失敗', error);
+        debugLog('提交繳費回報失敗', error);
         
         let errorMessage = '提交失敗';
         
@@ -1829,6 +1831,7 @@ async function handlePaymentSubmit(e) {
         submitBtn.innerHTML = originalText;
     }
 }
+
 
 function handleSubmitSuccess(result) {
     UIManager.showToast('繳費回報提交成功！', 'success');
