@@ -357,7 +357,7 @@
 <body>
   <div class="container">
       <div class="header">
-          <h1>🛒 訂購管理系統</h1>
+          <h1>🛒 【多福氣】BOGO查詢小幫手</h1>
           <p>實名制登記 · 訂單查詢 · 繳費回報</p>
       </div>
       
@@ -386,14 +386,28 @@
                   </div>
                   
                   <h2>📝 實名制登記</h2>
-                  <form id="nameForm">
+                  <!-- <form id="nameForm">
                       <div class="form-group">
                           <label for="realNameInput">真實姓名 *</label>
                           <input type="text" id="realNameInput" name="realName" required placeholder="請輸入您的真實姓名">
                       </div>
                       
                       <button type="submit" class="btn" id="registerSubmitBtn">完成登記</button>
+                  </form> -->
+                  <form id="nameForm">
+                      <div class="form-group">
+                          <label for="realNameInput">真實姓名 *</label>
+                          <input type="text" id="realNameInput" name="realName" required placeholder="請輸入您的真實姓名">
+                      </div>
+                      
+                      <div class="form-group">
+                          <label for="referrerInput">精油老師或介紹人</label>
+                          <input type="text" id="referrerInput" name="referrer" placeholder="請輸入精油老師或介紹人姓名（選填）">
+                      </div>
+                      
+                      <button type="submit" class="btn" id="registerSubmitBtn">完成登記</button>
                   </form>
+
               </div>
               
               <!-- 已註冊狀態 -->
@@ -438,7 +452,7 @@
       // 設定區域 - 請修改為您的實際值
       const CONFIG = {
           LIFF_ID: '1657285806-2bmkYWkN', // 請替換為實際的 LIFF ID
-          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbx4IpYvra7_GTFLSKj0PdmmK0-gbKt5S0yjEYPwP3PbiwFTPkNGPVCNNSVVJMkuXK-r3Q/exec', // 請替換為 GAS 部署網址
+          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbyYd6_KxjgUUyI6QElsa8Av9Tk1B0BNmrO8y1ikkwp-tQU9jigmP9pd9Xwiojyqu-YQ8g/exec', // 請替換為 GAS 部署網址
           DEBUG_MODE: false, // 關閉除錯模式
           DEMO_MODE: false // 關閉示範模式
       };
@@ -584,18 +598,37 @@
           }
 
           // 如果已註冊，顯示註冊資訊
-          if (isRegistered && userRegistrationData) {
-              html += `
-                  <div class="info-item">
-                      <span class="info-label">真實姓名:</span>
-                      <span class="info-value">${userRegistrationData.realName}</span>
-                  </div>
-                  <div class="info-item">
-                      <span class="info-label">註冊時間:</span>
-                      <span class="info-value">${new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW')}</span>
-                  </div>
-              `;
-          }
+          // if (isRegistered && userRegistrationData) {
+          //     html += `
+          //         <div class="info-item">
+          //             <span class="info-label">真實姓名:</span>
+          //             <span class="info-value">${userRegistrationData.realName}</span>
+          //         </div>
+          //         <div class="info-item">
+          //             <span class="info-label">註冊時間:</span>
+          //             <span class="info-value">${new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW')}</span>
+          //         </div>
+          //     `;
+          // }
+
+          // 如果已註冊，顯示註冊資訊
+            if (isRegistered && userRegistrationData) {
+                html += `
+                    <div class="info-item">
+                        <span class="info-label">真實姓名:</span>
+                        <span class="info-value">${userRegistrationData.realName}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">介紹人:</span>
+                        <span class="info-value">${userRegistrationData.referrer || '無'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">註冊時間:</span>
+                        <span class="info-value">${new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW')}</span>
+                    </div>
+                `;
+            }
+
 
           userDetailsDiv.innerHTML = html;
           userInfoDiv.style.display = 'block';
@@ -799,26 +832,28 @@
       }
 
       // 實名制登記
-      document.addEventListener('submit', async function(e) {
-          if (e.target.id === 'nameForm') {
-              e.preventDefault();
-              
-              debugLog('提交註冊表單');
-              
-              const formData = new FormData(e.target);
-              const realName = formData.get('realName').trim();
-              
-              if (!realName) {
-                  showError('請輸入真實姓名');
-                  return;
-              }
-              
-              const registerData = {
-                  userId: userId,
-                  lineDisplayName: userProfile.displayName,
-                  realName: realName,
-                  registeredAt: new Date().toISOString()
-              };
+          document.addEventListener('submit', async function(e) {
+              if (e.target.id === 'nameForm') {
+                  e.preventDefault();
+                  
+                  debugLog('提交註冊表單');
+                  
+                  const formData = new FormData(e.target);
+                  const realName = formData.get('realName').trim();
+                  const referrer = formData.get('referrer').trim(); // 獲取介紹人欄位
+                  
+                  if (!realName) {
+                      showError('請輸入真實姓名');
+                      return;
+                  }
+                  
+                  const registerData = {
+                      userId: userId,
+                      lineDisplayName: userProfile.displayName,
+                      realName: realName,
+                      referrer: referrer, // 添加介紹人欄位
+                      registeredAt: new Date().toISOString()
+                  };
               
               try {
                   // 顯示載入狀態
@@ -900,6 +935,10 @@
                     <div class="summary-item">
                         <span>真實姓名:</span>
                         <span>${orderSummary.realName}</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="referrerInput">精油老師或介紹人</label>
+                        <input type="text" id="referrerInput" name="referrer" placeholder="請輸入精油老師或介紹人姓名（選填）">
                     </div>
                 </div>
                 
