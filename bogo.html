@@ -1766,15 +1766,26 @@ async function handlePaymentSubmit(e) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span>處理中...</span>';
         
+        // 確保 currentOrderSummary 存在
+        if (!currentOrderSummary || !currentOrderSummary.orderId) {
+            throw new Error('訂單資訊不完整，請重新查詢訂單');
+        }
+        
+        // 確保用戶資訊存在
+        if (!userId || !userRegistrationData || !userRegistrationData.realName) {
+            throw new Error('用戶資訊不完整，請重新登入');
+        }
+        
         debugLog('開始處理繳費提交', {
             paymentAmount,
             paymentMethod,
-            paymentNote
+            paymentNote,
+            orderId: currentOrderSummary.orderId
         });
         
         submitBtn.innerHTML = '<span>提交中...</span>';
         
-        // 準備提交資料
+        // 準備提交資料 - 確保所有必要欄位都有提供
         const submitData = {
             userId: userId,
             orderId: currentOrderSummary.orderId,
@@ -1782,20 +1793,11 @@ async function handlePaymentSubmit(e) {
             realName: userRegistrationData.realName,
             paymentAmount: paymentAmount,
             paymentMethod: paymentMethod,
-            paymentNote: paymentNote,
-            // 添加空的圖片陣列，保持與原API相容
-            images: [],
-            timestamp: new Date().toISOString(),
-            clientInfo: {
-                userAgent: navigator.userAgent,
-                url: window.location.href,
-                liffVersion: liff.getVersion()
-            }
+            paymentNote: paymentNote || '',
+            images: []  // 保持空陣列
         };
         
-        debugLog('準備提交資料', {
-            dataSize: JSON.stringify(submitData).length
-        });
+        debugLog('準備提交資料', submitData);
         
         // 提交資料
         const result = await callAPIWithRetry('submit-payment', submitData);
@@ -1808,29 +1810,13 @@ async function handlePaymentSubmit(e) {
         
     } catch (error) {
         debugLog('提交繳費回報失敗', error);
-        
-        let errorMessage = '提交失敗';
-        
-        if (error.message.includes('timeout') || error.message.includes('超時')) {
-            errorMessage = '網路連線超時，請稍後再試';
-        } else if (error.message.includes('network') || error.message.includes('網路')) {
-            errorMessage = '網路連線問題，請檢查網路狀態';
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
-        
-        UIManager.showToast(errorMessage, 'error', 5000);
-        
-        if (CONFIG.DEBUG_MODE) {
-            console.error('詳細錯誤資訊:', error);
-            UIManager.showToast(`除錯資訊: ${error.stack}`, 'info', 10000);
-        }
-        
+        UIManager.showToast('提交失敗: ' + error.message, 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
     }
 }
+
 
 
 function handleSubmitSuccess(result) {
