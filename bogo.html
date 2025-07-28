@@ -386,28 +386,14 @@
                   </div>
                   
                   <h2>📝 實名制登記</h2>
-                  <!-- <form id="nameForm">
-                      <div class="form-group">
-                          <label for="realNameInput">真實姓名 *</label>
-                          <input type="text" id="realNameInput" name="realName" required placeholder="請輸入您的真實姓名">
-                      </div>
-                      
-                      <button type="submit" class="btn" id="registerSubmitBtn">完成登記</button>
-                  </form> -->
                   <form id="nameForm">
                       <div class="form-group">
                           <label for="realNameInput">真實姓名 *</label>
                           <input type="text" id="realNameInput" name="realName" required placeholder="請輸入您的真實姓名">
                       </div>
                       
-                      <div class="form-group">
-                          <label for="referrerInput">精油老師或介紹人</label>
-                          <input type="text" id="referrerInput" name="referrer" placeholder="請輸入精油老師或介紹人姓名（選填）">
-                      </div>
-                      
                       <button type="submit" class="btn" id="registerSubmitBtn">完成登記</button>
                   </form>
-
               </div>
               
               <!-- 已註冊狀態 -->
@@ -452,7 +438,7 @@
       // 設定區域 - 請修改為您的實際值
       const CONFIG = {
           LIFF_ID: '1657285806-2bmkYWkN', // 請替換為實際的 LIFF ID
-          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbyYd6_KxjgUUyI6QElsa8Av9Tk1B0BNmrO8y1ikkwp-tQU9jigmP9pd9Xwiojyqu-YQ8g/exec', // 請替換為 GAS 部署網址
+          API_BASE_URL: 'https://script.google.com/macros/s/AKfycbyHkUSssVW-4WyLen5oWndenngyU1tQZ0methIjmd1IKO1yGiZUShtftBC5romApywJfA/exec', // 請替換為 GAS 部署網址
           DEBUG_MODE: false, // 關閉除錯模式
           DEMO_MODE: false // 關閉示範模式
       };
@@ -598,37 +584,18 @@
           }
 
           // 如果已註冊，顯示註冊資訊
-          // if (isRegistered && userRegistrationData) {
-          //     html += `
-          //         <div class="info-item">
-          //             <span class="info-label">真實姓名:</span>
-          //             <span class="info-value">${userRegistrationData.realName}</span>
-          //         </div>
-          //         <div class="info-item">
-          //             <span class="info-label">註冊時間:</span>
-          //             <span class="info-value">${new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW')}</span>
-          //         </div>
-          //     `;
-          // }
-
-          // 如果已註冊，顯示註冊資訊
-            if (isRegistered && userRegistrationData) {
-                html += `
-                    <div class="info-item">
-                        <span class="info-label">真實姓名:</span>
-                        <span class="info-value">${userRegistrationData.realName}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">介紹人:</span>
-                        <span class="info-value">${userRegistrationData.referrer || '無'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">註冊時間:</span>
-                        <span class="info-value">${new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW')}</span>
-                    </div>
-                `;
-            }
-
+          if (isRegistered && userRegistrationData) {
+              html += `
+                  <div class="info-item">
+                      <span class="info-label">真實姓名:</span>
+                      <span class="info-value">${userRegistrationData.realName}</span>
+                  </div>
+                  <div class="info-item">
+                      <span class="info-label">註冊時間:</span>
+                      <span class="info-value">${new Date(userRegistrationData.registeredAt).toLocaleDateString('zh-TW')}</span>
+                  </div>
+              `;
+          }
 
           userDetailsDiv.innerHTML = html;
           userInfoDiv.style.display = 'block';
@@ -792,6 +759,22 @@
               </div>
               
               <div class="form-group">
+                  <label for="receiverName">收款人</label>
+                  <select id="receiverName" onchange="toggleCustomReceiver()">
+                      <option value="顏華萱">顏華萱</option>
+                      <option value="賴怡文">賴怡文</option>
+                      <option value="顏禎儀">顏禎儀</option>
+                      <option value="吳家嘉">吳家嘉</option>
+                      <option value="other">其他...</option>
+                  </select>
+              </div>
+              
+              <div class="form-group" id="customReceiverGroup" style="display: none;">
+                  <label for="customReceiver">自定義收款人</label>
+                  <input type="text" id="customReceiver" placeholder="請輸入收款人姓名">
+              </div>
+              
+              <div class="form-group">
                   <label for="paymentNote">備註</label>
                   <input type="text" id="paymentNote" placeholder="轉帳帳號後5碼或其他說明">
               </div>
@@ -802,6 +785,19 @@
           // 載入訂單摘要
           loadOrderSummaryForPayment();
       }
+
+            // 切換自定義收款人輸入框
+      function toggleCustomReceiver() {
+          const receiverSelect = document.getElementById('receiverName');
+          const customReceiverGroup = document.getElementById('customReceiverGroup');
+          
+          if (receiverSelect.value === 'other') {
+              customReceiverGroup.style.display = 'block';
+          } else {
+              customReceiverGroup.style.display = 'none';
+          }
+      }
+
 
       // 標籤頁切換
       function switchTab(tabName, event) {
@@ -832,28 +828,26 @@
       }
 
       // 實名制登記
-          document.addEventListener('submit', async function(e) {
-              if (e.target.id === 'nameForm') {
-                  e.preventDefault();
-                  
-                  debugLog('提交註冊表單');
-                  
-                  const formData = new FormData(e.target);
-                  const realName = formData.get('realName').trim();
-                  const referrer = formData.get('referrer').trim(); // 獲取介紹人欄位
-                  
-                  if (!realName) {
-                      showError('請輸入真實姓名');
-                      return;
-                  }
-                  
-                  const registerData = {
-                      userId: userId,
-                      lineDisplayName: userProfile.displayName,
-                      realName: realName,
-                      referrer: referrer, // 添加介紹人欄位
-                      registeredAt: new Date().toISOString()
-                  };
+      document.addEventListener('submit', async function(e) {
+          if (e.target.id === 'nameForm') {
+              e.preventDefault();
+              
+              debugLog('提交註冊表單');
+              
+              const formData = new FormData(e.target);
+              const realName = formData.get('realName').trim();
+              
+              if (!realName) {
+                  showError('請輸入真實姓名');
+                  return;
+              }
+              
+              const registerData = {
+                  userId: userId,
+                  lineDisplayName: userProfile.displayName,
+                  realName: realName,
+                  registeredAt: new Date().toISOString()
+              };
               
               try {
                   // 顯示載入狀態
@@ -935,10 +929,6 @@
                     <div class="summary-item">
                         <span>真實姓名:</span>
                         <span>${orderSummary.realName}</span>
-                    </div>
-                    <div class="form-group">
-                        <label for="referrerInput">精油老師或介紹人</label>
-                        <input type="text" id="referrerInput" name="referrer" placeholder="請輸入精油老師或介紹人姓名（選填）">
                     </div>
                 </div>
                 
@@ -1051,6 +1041,20 @@
             }
             
             const paymentMethod = document.getElementById('paymentMethod').value;
+            const receiverSelect = document.getElementById('receiverName');
+            
+            // 處理收款人 - 如果選擇"其他"，則使用自定義輸入的值
+            let receiverName;
+            if (receiverSelect.value === 'other') {
+                receiverName = document.getElementById('customReceiver').value.trim();
+                if (!receiverName) {
+                    showError('請輸入收款人姓名');
+                    return;
+                }
+            } else {
+                receiverName = receiverSelect.value;
+            }
+            
             const paymentNote = document.getElementById('paymentNote').value;
             
             const paymentData = {
@@ -1059,6 +1063,7 @@
                 realName: currentOrderSummary.realName,
                 paymentAmount: currentOrderSummary.totalAmount,
                 paymentMethod: paymentMethod,
+                receiverName: receiverName,
                 paymentNote: paymentNote,
                 submittedAt: new Date().toISOString()
             };
@@ -1078,6 +1083,9 @@
                     
                     // 清空表單
                     document.getElementById('paymentNote').value = '';
+                    if (document.getElementById('customReceiver')) {
+                        document.getElementById('customReceiver').value = '';
+                    }
                     
                     submitBtn.textContent = '已提交';
                     submitBtn.disabled = true;
@@ -1099,6 +1107,7 @@
                 }
             }
         }
+
 
         // 顯示錯誤訊息
         function showError(message) {
