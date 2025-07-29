@@ -378,7 +378,6 @@
         <button class="nav-tab" onclick="switchTab('payments')">💰 繳費記錄</button>
         <button class="nav-tab" onclick="switchTab('orders')">📋 訂單管理</button>
         <button class="nav-tab" onclick="switchTab('users')">👥 用戶管理</button>
-        <button class="nav-tab" onclick="switchTab('reports')">📈 報表</button>
         <button class="nav-tab" onclick="switchTab('settings')">⚙️ 系統設定</button>
     </div>
     
@@ -460,25 +459,6 @@
                 <div id="usersTable">
                     <div class="loading">載入用戶資料中...</div>
                 </div>
-            </div>
-        </div>
-        
-        <!-- 報表 -->
-        <div id="reports" class="tab-content">
-            <h2 style="margin-bottom: 20px;">📈 系統報表</h2>
-            
-            <div class="form-group">
-                <label for="reportDate">選擇日期範圍</label>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <input type="date" id="reportStartDate" style="flex: 1; min-width: 150px;">
-                    <span>至</span>
-                    <input type="date" id="reportEndDate" style="flex: 1; min-width: 150px;">
-                    <button class="btn btn-primary" onclick="generateReport()">📊 生成報表</button>
-                </div>
-            </div>
-            
-            <div id="reportContent">
-                <div class="loading">請選擇日期範圍並生成報表</div>
             </div>
         </div>
         
@@ -567,7 +547,7 @@
     // 設定區域 - 請修改為您的實際值
     const CONFIG = {
         LIFF_ID: '1657285806-2bmkYWkN', // 請替換為實際的 LIFF ID
-        API_BASE_URL: 'https://script.google.com/macros/s/AKfycbx4IpYvra7_GTFLSKj0PdmmK0-gbKt5S0yjEYPwP3PbiwFTPkNGPVCNNSVVJMkuXK-r3Q/exec', // 請替換為 GAS 部署網址
+        API_BASE_URL: 'https://script.google.com/macros/s/AKfycbzNner3KNyfY1VGjq0OBpsA8WCHhXKh0pRm28kKdRftDW_v_ItQgoufI2zCurUyaW0O/exec', // 請替換為 GAS 部署網址
         DEBUG_MODE: false,
         ADMIN_USER_IDS: [
             // 請在這裡添加管理者的 LINE User ID
@@ -747,7 +727,12 @@
         
         // 顯示選中的標籤內容
         document.getElementById(tabName).classList.add('active');
-        event.target.classList.add('active');
+        
+        // 找到對應的按鈕並添加active狀態
+        const activeTab = document.querySelector(`.nav-tab[onclick*="${tabName}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+        }
         
         // 載入對應內容
         loadTabContent(tabName);
@@ -770,9 +755,6 @@
             case 'users':
                 loadUsers();
                 break;
-            case 'reports':
-                initReports();
-                break;
             case 'settings':
                 loadSystemInfo();
                 break;
@@ -784,21 +766,33 @@
         try {
             debugLog('載入儀表板');
             
-            // 同時載入統計資料
-            const [statsResult, paymentsResult, usersResult] = await Promise.all([
-                callAPI('get-statistics', {}),
-                callAPI('get-all-payments', {}),
-                callAPI('get-all-users', {})
-            ]);
+            // 使用現有API獲取統計資料
+            const statsResult = await callAPI('get-statistics', {});
             
             if (statsResult.success) {
                 displayDashboardStats(statsResult.statistics);
+            } else {
+                // 如果沒有統計API，則手動計算統計數據
+                await Promise.all([
+                    loadAllPayments(),
+                    loadUsers()
+                ]);
+                
+                const manualStats = {
+                    totalUsers: allUsers.length,
+                    totalOrders: 0, // 這個需要從訂單數據中計算
+                    pendingPayments: allPayments.filter(p => p.status === '待審核').length,
+                    approvedPayments: allPayments.filter(p => p.status === '已確認').length,
+                    totalAmount: allPayments.reduce((sum, p) => sum + (p.paymentAmount || 0), 0)
+                };
+                
+                displayDashboardStats(manualStats);
             }
             
             // 顯示系統概覽
             displaySystemOverview({
-                totalPayments: paymentsResult.success ? paymentsResult.payments.length : 0,
-                totalUsers: usersResult.success ? usersResult.users.length : 0,
+                totalPayments: allPayments.length,
+                totalUsers: allUsers.length,
                 lastUpdate: new Date().toLocaleString('zh-TW')
             });
             
@@ -828,7 +822,6 @@ function displayDashboardStats(statistics) {
             <div class="stat-label">總金額</div>
         </div>
     `;
-    
     document.getElementById('dashboardStats').innerHTML = statsHtml;
 }
 
@@ -1030,6 +1023,7 @@ async function loadAllOrders() {
         debugLog('載入所有訂單');
         document.getElementById('allOrdersTable').innerHTML = '<div class="loading">載入中...</div>';
         
+        // 先載入所有用戶
         const result = await callAPI('get-all-users', {});
         
         if (result.success) {
@@ -1158,7 +1152,7 @@ function displayUsers(users) {
                 <tr>
                     <th>用戶資訊</th>
                     <th>註冊時間</th>
-                    <th>狀態</th>
+                    <th>指定收款人</th>
                     <th>操作</th>
                 </tr>
             </thead>
@@ -1172,13 +1166,11 @@ function displayUsers(users) {
                     <div style="font-weight: 600;">${user.realName}</div>
                     <small style="color: #6c757d;">${user.lineDisplayName}</small>
                     <div style="font-size: 11px; color: #999; margin-top: 2px;">
-                        ID: ${user.userId.substring(0, 20)}...
+                        ID: ${user.userId.substring(0, 10)}...
                     </div>
                 </td>
                 <td>${new Date(user.registeredAt).toLocaleString('zh-TW')}</td>
-                <td>
-                    <span class="status-badge status-approved">正常</span>
-                </td>
+                <td>${user.designatedReceiver || '-'}</td>
                 <td>
                     <button class="btn btn-primary" onclick="viewUserOrders('${user.lineDisplayName}')">
                         📋 查看訂單
@@ -1194,186 +1186,6 @@ function displayUsers(users) {
     `;
     
     document.getElementById('usersTable').innerHTML = html;
-}
-
-// 初始化報表
-function initReports() {
-    debugLog('初始化報表');
-    const today = new Date().toISOString().split('T')[0];
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    
-    document.getElementById('reportStartDate').value = weekAgo;
-    document.getElementById('reportEndDate').value = today;
-}
-
-// 生成報表
-async function generateReport() {
-    const startDate = document.getElementById('reportStartDate').value;
-    const endDate = document.getElementById('reportEndDate').value;
-    
-    if (!startDate || !endDate) {
-        alert('請選擇開始和結束日期');
-        return;
-    }
-    
-    if (new Date(startDate) > new Date(endDate)) {
-        alert('開始日期不能晚於結束日期');
-        return;
-    }
-    
-    try {
-        debugLog('生成報表', { startDate, endDate });
-        document.getElementById('reportContent').innerHTML = '<div class="loading">生成報表中...</div>';
-        
-        // 載入所有資料並進行分析
-        const [paymentsResult, usersResult] = await Promise.all([
-            callAPI('get-all-payments', {}),
-            callAPI('get-all-users', {})
-        ]);
-        
-        if (paymentsResult.success && usersResult.success) {
-            const report = generateReportData(paymentsResult.payments, usersResult.users, startDate, endDate);
-            displayReport(report);
-        } else {
-            throw new Error('載入報表資料失敗');
-        }
-    } catch (error) {
-        debugLog('生成報表失敗', error);
-        console.error('生成報表失敗:', error);
-        document.getElementById('reportContent').innerHTML = 
-            `<div class="error">生成報表失敗: ${error.message}</div>`;
-    }
-}
-
-function generateReportData(payments, users, startDate, endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate + 'T23:59:59');
-    
-    // 篩選日期範圍內的資料
-    const periodPayments = payments.filter(payment => {
-        const paymentDate = new Date(payment.submittedAt);
-        return paymentDate >= start && paymentDate <= end;
-    });
-    
-    const periodUsers = users.filter(user => {
-        const regDate = new Date(user.registeredAt);
-        return regDate >= start && regDate <= end;
-    });
-    
-    // 統計資料
-    const totalAmount = periodPayments.reduce((sum, payment) => sum + (payment.paymentAmount || 0), 0);
-    const approvedPayments = periodPayments.filter(p => p.status === '已確認').length;
-    const pendingPayments = periodPayments.filter(p => p.status === '待審核').length;
-    const rejectedPayments = periodPayments.filter(p => p.status === '已拒絕').length;
-    
-    return {
-        period: `${startDate} 至 ${endDate}`,
-        summary: {
-            newRegistrations: periodUsers.length,
-            newPayments: periodPayments.length,
-            approvedPayments: approvedPayments,
-            pendingPayments: pendingPayments,
-            rejectedPayments: rejectedPayments,
-            totalAmount: totalAmount
-        },
-        details: {
-            payments: periodPayments,
-            users: periodUsers
-        }
-    };
-}
-
-function displayReport(report) {
-    const html = `
-        <div class="table-container">
-            <h3>📊 ${report.period} 報表</h3>
-            
-            <div class="stats-grid" style="margin: 20px 0;">
-                <div class="stat-card">
-                    <div class="stat-number">${report.summary.newRegistrations}</div>
-                    <div class="stat-label">新註冊用戶</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">${report.summary.newPayments}</div>
-                    <div class="stat-label">新繳費記錄</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">${report.summary.approvedPayments}</div>
-                    <div class="stat-label">審核通過</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">NT$ ${report.summary.totalAmount.toLocaleString()}</div>
-                    <div class="stat-label">總金額</div>
-                </div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <div>
-                    <strong>✅ 已確認:</strong> ${report.summary.approvedPayments}
-                </div>
-                <div>
-                    <strong>⏳ 待審核:</strong> ${report.summary.pendingPayments}
-                </div>
-                <div>
-                    <strong>❌ 已拒絕:</strong> ${report.summary.rejectedPayments}
-                </div>
-            </div>
-            
-            ${report.details.payments.length > 0 ? `
-                <h4>💰 期間內繳費記錄</h4>
-                <table class="table" style="margin-bottom: 20px;">
-                    <thead>
-                        <tr>
-                            <th>日期</th>
-                            <th>用戶</th>
-                            <th>金額</th>
-                            <th>方式</th>
-                            <th>狀態</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${report.details.payments.map(payment => `
-                            <tr>
-                                <td>${new Date(payment.submittedAt).toLocaleDateString('zh-TW')}</td>
-                                <td>${payment.realName}</td>
-                                <td>NT$ ${payment.paymentAmount.toLocaleString()}</td>
-                                <td>${getPaymentMethodText(payment.paymentMethod)}</td>
-                                <td>
-                                    <span class="status-badge status-${getStatusClass(payment.status)}">
-                                        ${getStatusText(payment.status)}
-                                    </span>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            ` : ''}
-            
-            ${report.details.users.length > 0 ? `
-                <h4>👥 期間內新註冊用戶</h4>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>註冊日期</th>
-                            <th>真實姓名</th>
-                            <th>LINE 名稱</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${report.details.users.map(user => `
-                            <tr>
-                                <td>${new Date(user.registeredAt).toLocaleDateString('zh-TW')}</td>
-                                <td>${user.realName}</td>
-                                <td>${user.lineDisplayName}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            ` : ''}
-        </div>
-    `;
-    
-    document.getElementById('reportContent').innerHTML = html;
 }
 
 // 載入系統資訊
@@ -1470,6 +1282,7 @@ async function viewOrderDetails(orderId) {
                     <div><strong>訂單編號:</strong> ${order.orderId}</div>
                     <div><strong>用戶姓名:</strong> ${order.realName}</div>
                     <div><strong>LINE名稱:</strong> ${order.lineName}</div>
+                    ${order.designatedReceiver ? `<div><strong>指定收款人:</strong> ${order.designatedReceiver}</div>` : ''}
                 </div>
                 
                 <h4 style="color: #00B900; margin: 20px 0 10px;">📦 產品清單</h4>
@@ -1513,7 +1326,6 @@ function closeOrderModal() {
     document.getElementById('orderModal').style.display = 'none';
 }
 
-// 查看用戶訂單
 // 查看用戶訂單
 async function viewUserOrders(lineName) {
     try {
@@ -1606,12 +1418,11 @@ async function handleReviewSubmit(e) {
     try {
         debugLog('提交審核', { orderId, status, reviewNote });
         
-        const result = await callAPI('review-payment', {
+        // 使用updatePaymentStatus API
+        const result = await callAPI('updatePaymentStatus', {
             orderId: orderId,
-            status: status,
-            reviewNote: reviewNote,
-            reviewedAt: new Date().toISOString(),
-            reviewedBy: adminProfile.displayName
+            newStatus: status,
+            reviewNote: reviewNote
         });
         
         if (result.success) {
@@ -1684,12 +1495,9 @@ async function batchApprove() {
         debugLog('批量通過', selectedPayments);
         
         const promises = selectedPayments.map(orderId => 
-            callAPI('review-payment', {
+            callAPI('updatePaymentStatus', {
                 orderId: orderId,
-                status: '已確認',
-                reviewNote: '批量審核通過',
-                reviewedAt: new Date().toISOString(),
-                reviewedBy: adminProfile.displayName
+                newStatus: '已確認'
             })
         );
         
@@ -1726,12 +1534,9 @@ async function batchReject() {
         debugLog('批量拒絕', { payments: selectedPayments, reason });
         
         const promises = selectedPayments.map(orderId => 
-            callAPI('review-payment', {
+            callAPI('updatePaymentStatus', {
                 orderId: orderId,
-                status: '已拒絕',
-                reviewNote: reason,
-                reviewedAt: new Date().toISOString(),
-                reviewedBy: adminProfile.displayName
+                newStatus: '已拒絕'
             })
         );
         
@@ -1761,19 +1566,23 @@ async function exportAllData() {
     try {
         debugLog('匯出所有資料');
         
-        const [paymentsResult, usersResult] = await Promise.all([
-            callAPI('get-all-payments', {}),
-            callAPI('get-all-users', {})
+        // 確保所有數據都已載入
+        await Promise.all([
+            loadAllPayments(),
+            loadUsers(),
+            loadAllOrders()
         ]);
         
         const exportData = {
             exportTime: new Date().toISOString(),
             exportBy: adminProfile.displayName,
-            payments: paymentsResult.success ? paymentsResult.payments : [],
-            users: usersResult.success ? usersResult.users : [],
+            payments: allPayments,
+            users: allUsers,
+            orders: allOrders.map(o => o.orderSummary),
             summary: {
-                totalUsers: usersResult.success ? usersResult.users.length : 0,
-                totalPayments: paymentsResult.success ? paymentsResult.payments.length : 0
+                totalUsers: allUsers.length,
+                totalPayments: allPayments.length,
+                totalOrders: allOrders.length
             }
         };
         
@@ -1864,7 +1673,7 @@ async function exportUserList() {
         }
         
         // 轉換為 CSV 格式
-        const headers = ['真實姓名', 'LINE名稱', '用戶ID', '註冊時間'];
+        const headers = ['真實姓名', 'LINE名稱', '用戶ID', '註冊時間', '指定收款人'];
         let csvContent = headers.join(',') + '\n';
         
         result.users.forEach(user => {
@@ -1872,7 +1681,8 @@ async function exportUserList() {
                 user.realName,
                 user.lineDisplayName,
                 user.userId,
-                new Date(user.registeredAt).toLocaleString('zh-TW')
+                new Date(user.registeredAt).toLocaleString('zh-TW'),
+                user.designatedReceiver || ''
             ];
             csvContent += row.map(field => `"${field}"`).join(',') + '\n';
         });
@@ -2059,3 +1869,5 @@ if (CONFIG.DEBUG_MODE) {
 </body>
 </html>
 
+
+    
